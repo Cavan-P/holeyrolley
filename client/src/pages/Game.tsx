@@ -1,25 +1,15 @@
+import { useEffect, useRef } from 'react'
+import { startGame } from '../game'
 
-import { Button } from '../components/Button'
-import { useNavigate } from 'react-router'
+export function Game() {
+    const canvasRef = useRef<HTMLCanvasElement>(null)
 
-export function Game(){
+    useEffect(() => {
+        const canvas = canvasRef.current
 
-    const navigate = useNavigate()
+        if (!canvas) return
+        return startGame(canvas)
+    }, [])
 
-    return (
-        <div className='flex flex-col min-h-screen w-full h-full bg-sky text-ink'>
-            <div className='grow'>
-                <div className="gap-3 w-80 pl-14 pt-14 pb-7">
-                    <h1 className="text-7xl font-bold font-display tracking-wide">
-                        Game
-                    </h1>
-                </div>
-                <div className='grid grid-cols-2 gap-3 w-100 p-14'>
-                    <div className='col-span-2'>
-                        <Button label='Back' onClick={() => {navigate('/')}} splash={true} arrow={true} />
-                    </div>
-                </div>
-            </div>
-        </div>
-    )
+    return <canvas ref={canvasRef} className='touch-none fixed inset-0 w-full h-full block' />
 }
