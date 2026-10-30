@@ -4,9 +4,62 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-sky: #dcf1ff;
-  --color-ink: #1d3319;
-  --color-turf: #6cc04a;
-  --color-putt: #ff9f1c;
-  --color-night: #1b2a4a;
+  /* Day palette (default) */
+  --color-sky: #dcf1ff;          /* page background */
+  --color-ink: #1d3319;          /* main text */
+  --color-sub: #4a6644;          /* subtitle, chevrons */
+  --color-brand: #3d8a2c;        /* "Rolley" in the title */
+  --color-card: #ffffff;         /* secondary buttons */
+  --color-track: #c4e2f4;        /* Day/Night toggle track */
+  --color-putt: #ff9f1c;         /* Play Online button */
+  --color-putt-ink: #1f1405;     /* text on the Play button */
+  --color-rail: #ffffff;         /* border around the course preview */
+  --color-turf: #6cc04a;         /* green stripe 1 */
+  --color-turf-stripe: #74c652;  /* green stripe 2 */
+  --color-hole: #1d3319;
+  --color-hole-in: #10200d;      /* inner shadow of the hole */
+  --color-flag: #ff5d5d;
+  --color-orb: #ffd23f;          /* sun (day) / moon (night) */
+  --color-star: #fff6e0;         /* night sky stars */
+  --color-firefly: #ffe58a;      /* night course fireflies */
+
+  --font-sans: "Nunito", system-ui, sans-serif;
+  --font-display: "Fredoka", system-ui, sans-serif;
 }
+
+:root {
+  --card-shadow: 0 1px 2px rgba(20,45,20,0.08), 0 4px 12px rgba(20,45,20,0.08);
+  --panel-shadow: 0 10px 30px rgba(20,45,20,0.15);
+  --orb-glow: 0 0 0 10px rgba(255,210,63,0.25);
+  --ball-glow: 0 3px 6px rgba(0,0,0,0.25);
+  --toggle-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+/* Night palette: same names, so bg-card etc. switch automatically */
+.dark {
+  --color-sky: #1b2a4a;
+  --color-ink: #fff6e0;
+  --color-sub: #b9c6e0;
+  --color-brand: #9be08a;
+  --color-card: #24375e;
+  --color-track: #15213b;
+  --color-putt: #ffb347;
+  --color-rail: #24375e;
+  --color-turf: #3f8f3a;
+  --color-turf-stripe: #449640;
+  --color-hole: #0a1408;
+  --color-hole-in: #050a04;
+  --color-flag: #ffb347;
+  --color-orb: #fff6e0;
+
+  --card-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.25);
+  --panel-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  --orb-glow: 0 0 28px 6px rgba(255,246,224,0.2);
+  --ball-glow: 0 0 14px 5px rgba(255,229,138,0.7);
+}
+
+@utility shadow-card   { box-shadow: var(--card-shadow); }
+@utility shadow-panel  { box-shadow: var(--panel-shadow); }
+@utility shadow-orb    { box-shadow: var(--orb-glow); }
+@utility shadow-ball   { box-shadow: var(--ball-glow); }
+@utility shadow-toggle { box-shadow: var(--toggle-shadow); }

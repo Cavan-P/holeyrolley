@@ -1,7 +1,16 @@
 // App.tsx
-import { MainMenu } from "./pages/MainMenu";
+import { MainMenu } from './pages/MainMenu'
+import { useNavigate, Routes, Route } from 'react-router'
 
-// TODO: keep track of the current screen in state and render the matching page
-export function App() {
-    return <MainMenu onPlay={() => console.log("play!")} />;
+
+export function App(){
+    const navigate = useNavigate()
+
+    return (
+        <Routes>
+            <Route path="/" element={ <MainMenu onPlay={() => { navigate('/play') }} />} />
+        </Routes>
+    )
+
+    
 }
