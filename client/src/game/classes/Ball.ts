@@ -1,3 +1,6 @@
+import { Wall } from './Wall'
+import { smooth } from '../utilities/smooth'
+
 export class Ball {
     x: number
     y: number
@@ -17,6 +20,11 @@ export class Ball {
     lastX: number
     lastY: number
 
+    cupX: number
+    cupY: number
+
+    holedTime: number
+
     constructor(x: number, y: number, color: string){
         this.x = x
         this.y = y
@@ -34,10 +42,15 @@ export class Ball {
         this.lastX = this.x
         this.lastY = this.y
 
+        this.cupX = 0
+        this.cupY = 0
+
         this.color = color
+
+        this.holedTime = -1
     }
 
-    private speed(): number {
+    speed(): number {
         return Math.sqrt(this.vx * this.vx + this.vy * this.vy)
     }
 
@@ -64,7 +77,53 @@ export class Ball {
         return true
     }
 
-    update(dt: number): void {
+    isMoving(){
+        return this.speed() > 0
+    }
+
+    dropIn(x: number, y: number): void {
+        this.holedTime = 0
+        this.cupX = x
+        this.cupY = y
+    }
+
+    holed(): boolean {
+        return this.holedTime >= 0
+    }
+
+    collide(w: Wall): void {
+        const [cx, cy] = w.closestPoint(this.x, this.y)
+        const dx = this.x - cx
+        const dy = this.y - cy
+        const d = Math.sqrt(dx * dx + dy * dy)
+        const minD = this.rad + w.r
+
+        if(d >= minD || !d) return
+
+        const nx = dx / d
+        const ny = dy / d
+
+        this.x = cx + nx * minD
+        this.y = cy + ny * minD
+
+        const vn = this.vx * nx + this.vy * ny
+        if(vn < 0){
+            this.vx -= (1 + w.bounce) * vn * nx
+            this.vy -= (1 + w.bounce) * vn * ny
+        }
+    }
+
+    update(dt: number, walls: Wall[]): void {
+        if(this.holed()){
+            this.holedTime += dt
+
+            this.x += smooth(this.x, this.cupX, 25, dt)
+            this.y += smooth(this.y, this.cupY, 25, dt)
+
+            this.vx = 0
+            this.vy = 0
+        }
+
         this.x += this.vx * dt
         this.y += this.vy * dt
 
@@ -80,6 +139,10 @@ export class Ball {
                 this.vx *= newS / s
                 this.vy *= newS / s
             }
+        }
+
+        for(let i = 0; i < 2; i++){
+            for(const w of walls) this.collide(w)
         }
     }
 
