@@ -1,0 +1,17 @@
+{
+    "workbench.colorCustomizations": {
+        "minimap.background": "#00000000",
+        "scrollbar.shadow": "#00000000",
+        "tree.indentGuidesStroke": "#888888"
+    },
+    "workbench.tree.indent": 20,
+    "workbench.tree.renderIndentGuides": "always",
+    "explorer.compactFolders": false,
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.patterns": {
+        "package.json": "package-lock.json"
+    },
+    "files.exclude": {
+        "**/node_modules": true
+    }
+}

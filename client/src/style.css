@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+/* lets you use dark: classes when <html class="dark"> — your Night mode */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-sky: #dcf1ff;
+  --color-ink: #1d3319;
+  --color-turf: #6cc04a;
+  --color-putt: #ff9f1c;
+  --color-night: #1b2a4a;
+}
