@@ -1,10 +1,12 @@
 import { Camera } from './classes/Camera'
+import { type Hole } from './classes/Hole'
+import { type Ball } from './classes/Ball'
 
 import { createGrassPattern } from './art/grass'
 import { drawAim } from './art/aim'
 
 import { setupInput } from './input'
-import { createTestHole } from './holes/testHole'
+import { course } from './holes/course'
 
 const SCENERY = '#4e8f3c'
 
@@ -14,11 +16,14 @@ type GameEvents = {
 }
 
 export type HoleResult = {
+    // 1-based, as shown to the player
+    hole: number,
     strokes: number,
-    par: number
+    par: number,
+    isLast: boolean
 }
 
-export function startGame(canvas: HTMLCanvasElement, events: GameEvents): () => void {
+export function startGame(canvas: HTMLCanvasElement, events: GameEvents): {nextHole: () => void, dispose: () => void} {
     const ctx = canvas.getContext('2d')
 
     if(!ctx) throw new Error('2D canvas not supported')
@@ -28,16 +33,36 @@ export function startGame(canvas: HTMLCanvasElement, events: GameEvents): () => 
     let last = performance.now()
     let acc = 0
 
-    const hole = createTestHole()
-
-    const ball = hole.balls[0]
-    if(!ball) throw new Error('Hole has no balls')
+    let holeIndex = 0
+    let hole: Hole
+    let ball: Ball
 
     let lastStrokes = 0
     let reportedComplete = false
-
     const camera = new Camera(0, 0, window.innerWidth, window.innerHeight)
-    camera.snapTo(ball.x, ball.y)
+
+    const loadHole = (index: number) => {
+        const make = course[index]
+        if(!make) return
+        
+        holeIndex = index
+    
+        hole = make()
+
+        const first = hole.balls[0]
+        if(!first) throw new Error('Hole has no balls')
+
+        ball = first
+    
+        
+        camera.snapTo(ball.x, ball.y)
+    
+        lastStrokes = -1
+        reportedComplete = false
+
+    }
+
+    loadHole(0)
 
     const grass = createGrassPattern(ctx)
 
@@ -66,7 +91,12 @@ export function startGame(canvas: HTMLCanvasElement, events: GameEvents): () => 
 
         if(ball.finished() && !reportedComplete){
             reportedComplete = true
-            events.onHoleComplete({ strokes: ball.strokes, par: hole.par})
+            events.onHoleComplete({
+                hole: holeIndex + 1,
+                strokes: ball.strokes,
+                par: hole.par,
+                isLast: holeIndex === course.length - 1
+            })
         }
 
         camera.begin(ctx)
@@ -100,11 +130,14 @@ export function startGame(canvas: HTMLCanvasElement, events: GameEvents): () => 
 
     window.addEventListener('resize', resize)
 
-    return () => {
-        cancelAnimationFrame(frameId)
+    return {
+        nextHole: () => loadHole(holeIndex + 1),
+        dispose: () => {
+            cancelAnimationFrame(frameId)
 
-        window.removeEventListener('resize', resize)
+            window.removeEventListener('resize', resize)
 
-        input.dispose()
+            input.dispose()
+        }
     }
 }
