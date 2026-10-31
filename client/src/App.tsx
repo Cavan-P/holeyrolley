@@ -20,7 +20,7 @@ export function App(){
             <Route path='/settings' element={ <Settings /> } />
             <Route path='/locker' element={ <Locker /> } />
             <Route path='/room/:code' element={ <TeeBox /> } />
-            <Route path='*' />
+            <Route path='*' element={<div>this page does not exist</div>} />
         </Routes>
     )
 

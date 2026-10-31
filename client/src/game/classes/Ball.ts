@@ -2,6 +2,9 @@ import type { Wall } from './Wall'
 import { smooth } from '../utilities/smooth'
 import type { Surface } from '../surfaces/Surface'
 
+// Shots weaker than this don't count (stops accidental taps from using a stroke)
+export const MIN_POWER = 0.05
+
 export class Ball {
     x: number
     y: number
@@ -10,7 +13,6 @@ export class Ball {
 
     rad: number
     maxSpeed: number
-    maxPull: number
     drag: number
     roll: number
     stopSpeed: number
@@ -32,7 +34,6 @@ export class Ball {
 
         this.rad = 8
         this.maxSpeed = 950
-        this.maxPull = 140
         this.drag = 0.9
         this.roll = 110
         this.stopSpeed = 6
@@ -55,19 +56,9 @@ export class Ball {
         return Math.sqrt(this.vx * this.vx + this.vy * this.vy)
     }
 
-    pull(mouse: { x: number, y: number}): {dx: number, dy: number, power: number}{
-        const px: number = this.x - mouse.x
-        const py: number = this.y - mouse.y
-        const len: number = Math.sqrt(px * px + py * py)
-        if(!len) return { dx: 0, dy: 0, power: 0 }
-
-        return { dx: px / len, dy: py / len, power: Math.min(len, this.maxPull) / this.maxPull }
-    }
-
-    release(mouse: { x: number, y: number}): boolean {
-        const { dx, dy, power } = this.pull(mouse)
-
-        if(power < 0.05) return false
+    // dx, dy: unit direction of the shot. power: 0 to 1
+    shoot(dx: number, dy: number, power: number): boolean {
+        if(power < MIN_POWER) return false
 
         this.lastX = this.x
         this.lastY = this.y
@@ -79,7 +70,7 @@ export class Ball {
     }
 
     isMoving(){
-        return this.speed() > 0
+        return this.speed() > this.stopSpeed
     }
 
     dropIn(x: number, y: number): void {

@@ -1,8 +1,9 @@
-import type { Ball } from '../classes/Ball'
+import { type Ball, MIN_POWER } from '../classes/Ball'
+import type { Aim } from '../input'
 
-export function drawAim(ctx: CanvasRenderingContext2D, ball: Ball, mouse: { x: number, y: number }): void {
-    const { dx, dy, power } = ball.pull(mouse)
-    if (power < 0.05) return
+export function drawAim(ctx: CanvasRenderingContext2D, ball: Ball, aim: Aim): void {
+    const { dx, dy, power } = aim
+    if (power < MIN_POWER) return
 
     const MAX_LEN = 120
     const len = power * MAX_LEN
