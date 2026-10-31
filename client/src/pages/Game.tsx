@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 import { startGame, type HoleResult } from '../game'
+import { defaultCourse } from '../game/courses/defaultCourse'
+import { loadDraft } from '../editor/storage'
 import { Button } from '../components/Button'
 
 function holeTitle(result: HoleResult): string {
@@ -130,6 +132,12 @@ export function Game(){
 
     const navigate = useNavigate()
 
+    // /play?test&hole=2 is a test run from the level editor: play its draft, starting at that hole
+    const [params] = useSearchParams()
+    const testing = params.has('test')
+    const startHole = Number(params.get('hole') ?? 0) || 0
+    const exit = () => navigate(testing ? '/editor' : '/')
+
     useEffect(() => {
         const canvas = canvasRef.current
         if (!canvas) return
@@ -139,11 +147,13 @@ export function Game(){
             setCard(prev => [...prev, r])
         }
 
-        const game = startGame(canvas, { onStroke: setStrokes, onHoleComplete })
+        const course = (testing ? loadDraft() : null) ?? defaultCourse
+
+        const game = startGame(canvas, course, { onStroke: setStrokes, onHoleComplete }, startHole)
         gameRef.current = game
 
         return () => game.dispose()
-    }, [])
+    }, [testing, startHole])
 
     return (
         <>
@@ -151,11 +161,16 @@ export function Game(){
             <div className='fixed top-4 left-4 pointer-events-none font-sans text-ink text-xl bg-card pb-2 pt-2 pr-4 pl-4 rounded-full'>
                 Strokes: {strokes}
             </div>
+            {testing && (
+                <button type='button' onClick={exit} className='fixed top-4 right-4 font-sans font-bold text-ink bg-card shadow-card rounded-full px-4 py-2 hover:bg-sky'>
+                    Back to editor
+                </button>
+            )}
             {result && (
                 <HoleComplete
                     result={result}
                     card={card}
-                    onBack={() => navigate('/')}
+                    onBack={exit}
                     onNext={() => {
                         gameRef.current?.nextHole()
                         setResult(null)

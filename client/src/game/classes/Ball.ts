@@ -24,6 +24,7 @@ export class Ball {
 
     lastX: number
     lastY: number
+    lastLayer: number
 
     cupX: number
     cupY: number
@@ -38,12 +39,14 @@ export class Ball {
 
     strokes: number
 
+    layer: number
+
     constructor(x: number, y: number, color: string){
         this.x = x
         this.y = y
 
         this.rad = 8
-        this.maxSpeed = 950
+        this.maxSpeed = 1200
         this.drag = 0.9
         this.roll = 110
         this.stopSpeed = 6
@@ -53,6 +56,7 @@ export class Ball {
 
         this.lastX = this.x
         this.lastY = this.y
+        this.lastLayer = 0
 
         this.cupX = 0
         this.cupY = 0
@@ -68,6 +72,8 @@ export class Ball {
         this.sinkTime = -1
 
         this.strokes = 0
+
+        this.layer = 0
     }
 
     speed(): number {
@@ -79,6 +85,7 @@ export class Ball {
 
         this.lastX = this.x
         this.lastY = this.y
+        this.lastLayer = this.layer
 
         this.vx = dx * power * this.maxSpeed
         this.vy = dy * power * this.maxSpeed
@@ -105,6 +112,7 @@ export class Ball {
     resetToLast(): void {
         this.x = this.lastX
         this.y = this.lastY
+        this.layer = this.lastLayer
         this.vx = 0
         this.vy = 0
         this.airTime = 0
@@ -152,7 +160,8 @@ export class Ball {
         this.x = cx + nx * minD
         this.y = cy + ny * minD
 
-        const vn = this.vx * nx + this.vy * ny
+        const [wvx, wvy] = w.velocityAt?.(cx, cy) ?? [0, 0]
+        const vn = (this.vx - wvx) * nx + (this.vy - wvy) * ny
         if(vn < 0){
             this.vx -= (1 + w.bounce) * vn * nx
             this.vy -= (1 + w.bounce) * vn * ny

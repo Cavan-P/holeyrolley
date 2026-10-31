@@ -1,4 +1,4 @@
-import { Ball } from './Ball'
+import type { Ball } from './Ball'
 import { clamp, map } from '../utilities/math'
 
 export class Cup {
@@ -59,8 +59,8 @@ export class Cup {
         ctx.fill()
     }
 
-    drawFlag(ctx: CanvasRenderingContext2D, ball: Ball): void {
-        const d = Math.hypot(ball.x - this.x, ball.y - this.y)
+    drawFlag(ctx: CanvasRenderingContext2D, ball: Ball | null): void {
+        const d = ball ? Math.hypot(ball.x - this.x, ball.y - this.y) : Infinity
         const a = clamp(map(d, 30, 90, 60, 255), 60, 255) / 255
     
         ctx.save()

@@ -1,6 +1,5 @@
-import { Shape } from './Shape'
+import { Shape, type Point } from './Shape'
 
-// Any shape made of straight edges, given as its corner points in order
 export class PolygonShape extends Shape {
     points: [number, number][]
 
@@ -9,8 +8,6 @@ export class PolygonShape extends Shape {
         this.points = points
     }
 
-    // Ray casting: imagine a line from the point going right forever, and count how many
-    // edges it crosses. Odd = inside, even = outside
     contains(x: number, y: number): boolean {
         let inside = false
 
@@ -22,7 +19,6 @@ export class PolygonShape extends Shape {
             const [ax, ay] = a
             const [bx, by] = b
 
-            // Does this edge cross the point's height, and is the crossing to the right of it?
             if((ay > y) !== (by > y) && x < ax + (y - ay) * (bx - ax) / (by - ay)){
                 inside = !inside
             }
@@ -47,5 +43,9 @@ export class PolygonShape extends Shape {
         const minX = Math.min(...xs)
         const minY = Math.min(...ys)
         return { x: minX, y: minY, w: Math.max(...xs) - minX, h: Math.max(...ys) - minY }
+    }
+
+    outline(): Point[][] {
+        return [this.points.map(([x, y]): Point => [x, y])]
     }
 }

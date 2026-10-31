@@ -5,3 +5,7 @@ export function map(v: number, a: number, b: number, c: number, d: number): numb
 export function clamp(value: number, min: number, max: number): number {
     return Math.max(min, Math.min(value, max))
 }
+
+export function lerp(start: number, end: number, t: number): number {
+    return start + (end - start) * t
+}

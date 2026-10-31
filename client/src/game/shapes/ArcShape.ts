@@ -1,5 +1,5 @@
-import { Shape } from './Shape'
-import { angleInArc } from '../utilities/angles'
+import { Shape, arcPoints, type Point } from './Shape'
+import { angleInArc, normalizeAngle } from '../utilities/angles'
 
 // A curved band: the part of a donut between two angles.
 // Angles are radians, 0 = pointing right, increasing clockwise on screen
@@ -38,5 +38,13 @@ export class ArcShape extends Shape {
     // The whole circle's box. Bigger than needed for short arcs, but always contains it
     bounds(): { x: number, y: number, w: number, h: number } {
         return { x: this.x - this.outer, y: this.y - this.outer, w: this.outer * 2, h: this.outer * 2 }
+    }
+
+    outline(): Point[][] {
+        const end = this.start + normalizeAngle(this.end - this.start)
+        return [[
+            ...arcPoints(this.x, this.y, this.outer, this.start, end, 32),
+            ...arcPoints(this.x, this.y, this.inner, end, this.start, 24)
+        ]]
     }
 }

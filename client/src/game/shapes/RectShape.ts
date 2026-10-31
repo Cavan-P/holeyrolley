@@ -1,4 +1,4 @@
-import { Shape } from './Shape'
+import { Shape, arcPoints, type Point } from './Shape'
 import { clamp } from '../utilities/math'
 
 export class RectShape extends Shape {
@@ -36,5 +36,17 @@ export class RectShape extends Shape {
 
     bounds(): { x: number, y: number, w: number, h: number } {
         return { x: this.x, y: this.y, w: this.w, h: this.h }
+    }
+
+    outline(): Point[][] {
+        const { x, y, w, h, radius: r } = this
+        if(r <= 0) return [[[x, y], [x + w, y], [x + w, y + h], [x, y + h]]]
+
+        return [[
+            ...arcPoints(x + w - r, y + r, r, -Math.PI / 2, 0, 6),
+            ...arcPoints(x + w - r, y + h - r, r, 0, Math.PI / 2, 6),
+            ...arcPoints(x + r, y + h - r, r, Math.PI / 2, Math.PI, 6),
+            ...arcPoints(x + r, y + r, r, Math.PI, Math.PI * 1.5, 6)
+        ]]
     }
 }

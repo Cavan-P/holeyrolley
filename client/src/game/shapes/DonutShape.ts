@@ -1,4 +1,4 @@
-import { Shape } from './Shape'
+import { Shape, arcPoints, type Point } from './Shape'
 
 export class DonutShape extends Shape {
     x: number
@@ -30,5 +30,12 @@ export class DonutShape extends Shape {
 
     bounds(): { x: number, y: number, w: number, h: number } {
         return { x: this.x - this.outer, y: this.y - this.outer, w: this.outer * 2, h: this.outer * 2 }
+    }
+
+    outline(): Point[][] {
+        return [
+            arcPoints(this.x, this.y, this.outer, 0, Math.PI * 2, 48).slice(0, -1),
+            arcPoints(this.x, this.y, this.inner, 0, Math.PI * 2, 40).slice(0, -1)
+        ]
     }
 }

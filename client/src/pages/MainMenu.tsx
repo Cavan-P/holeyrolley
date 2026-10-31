@@ -26,6 +26,9 @@ export function MainMenu(){
                     <Button label='Party' onClick={() => {navigate('/party')}} />
                     <Button label='Locker' onClick={() => {navigate('/locker')}} />
                     <Button label='Settings' onClick={() => {navigate('/settings')}} />
+                    <div className='col-span-2'>
+                        <Button label='Level editor' onClick={() => {navigate('/editor')}} arrow={true} />
+                    </div>
                 </div>
             </div>
             <footer className='p-4 pb-1 text-sm tracking-widest flex flex-row justify-between'>

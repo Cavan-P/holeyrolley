@@ -7,6 +7,7 @@ import { Party } from './pages/Party'
 import { Settings } from './pages/Settings'
 import { Locker } from './pages/Locker'
 import { TeeBox } from './pages/TeeBox'
+import { Editor } from './pages/Editor'
 
 
 export function App(){
@@ -20,6 +21,7 @@ export function App(){
             <Route path='/settings' element={ <Settings /> } />
             <Route path='/locker' element={ <Locker /> } />
             <Route path='/room/:code' element={ <TeeBox /> } />
+            <Route path='/editor' element={ <Editor /> } />
             <Route path='*' element={<div>this page does not exist</div>} />
         </Routes>
     )

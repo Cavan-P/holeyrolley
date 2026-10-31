@@ -1,4 +1,4 @@
-import { Shape } from './Shape'
+import { Shape, arcPoints, type Point } from './Shape'
 
 export class CircleShape extends Shape {
     x: number
@@ -23,5 +23,9 @@ export class CircleShape extends Shape {
 
     bounds(): { x: number, y: number, w: number, h: number } {
         return { x: this.x - this.r, y: this.y - this.r, w: this.r * 2, h: this.r * 2 }
+    }
+
+    outline(): Point[][] {
+        return [arcPoints(this.x, this.y, this.r, 0, Math.PI * 2, 48).slice(0, -1)]
     }
 }

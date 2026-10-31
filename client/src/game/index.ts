@@ -1,14 +1,14 @@
+import type { CourseData } from '@holey/shared'
 import { Camera } from './classes/Camera'
 import { type Hole } from './classes/Hole'
 import { type Ball } from './classes/Ball'
 
 import { createGrassPattern } from './art/grass'
 import { drawAim } from './art/aim'
+import { getTheme } from './art/themes'
 
 import { setupInput } from './input'
-import { course } from './holes/course'
-
-const SCENERY = '#4e8f3c'
+import { buildHole } from './build'
 
 type GameEvents = {
     onStroke: (strokes: number) => void
@@ -16,14 +16,13 @@ type GameEvents = {
 }
 
 export type HoleResult = {
-    // 1-based, as shown to the player
     hole: number,
     strokes: number,
     par: number,
     isLast: boolean
 }
 
-export function startGame(canvas: HTMLCanvasElement, events: GameEvents): {nextHole: () => void, dispose: () => void} {
+export function startGame(canvas: HTMLCanvasElement, course: CourseData, events: GameEvents, startHole: number = 0): {nextHole: () => void, dispose: () => void} {
     const ctx = canvas.getContext('2d')
 
     if(!ctx) throw new Error('2D canvas not supported')
@@ -41,13 +40,15 @@ export function startGame(canvas: HTMLCanvasElement, events: GameEvents): {nextH
     let reportedComplete = false
     const camera = new Camera(0, 0, window.innerWidth, window.innerHeight)
 
+    const theme = getTheme(course.theme)
+
     const loadHole = (index: number) => {
-        const make = course[index]
-        if(!make) return
-        
+        const data = course.holes[index]
+        if(!data) return
+
         holeIndex = index
-    
-        hole = make()
+
+        hole = buildHole(data, course)
 
         const first = hole.balls[0]
         if(!first) throw new Error('Hole has no balls')
@@ -62,9 +63,9 @@ export function startGame(canvas: HTMLCanvasElement, events: GameEvents): {nextH
 
     }
 
-    loadHole(0)
+    loadHole(startHole)
 
-    const grass = createGrassPattern(ctx)
+    const grass = createGrassPattern(ctx, theme.turf, theme.turfStripe)
 
     const input = setupInput({
         canvas,
@@ -95,14 +96,14 @@ export function startGame(canvas: HTMLCanvasElement, events: GameEvents): {nextH
                 hole: holeIndex + 1,
                 strokes: ball.strokes,
                 par: hole.par,
-                isLast: holeIndex === course.length - 1
+                isLast: holeIndex === course.holes.length - 1
             })
         }
 
         camera.begin(ctx)
         const visArea = camera.visibleRect()
 
-        ctx.fillStyle = SCENERY
+        ctx.fillStyle = theme.scenery
         ctx.fillRect(visArea.x, visArea.y, visArea.w, visArea.h)
 
         hole.drawGround(ctx, grass)

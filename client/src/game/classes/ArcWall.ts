@@ -12,7 +12,10 @@ export class ArcWall implements Collider {
     r: number
     bounce: number
 
-    constructor(x: number, y: number, radius: number, start: number, end: number, r: number, bounce: number){
+    color: string
+    layer: number
+
+    constructor(x: number, y: number, radius: number, start: number, end: number, r: number, bounce: number, color: string = '#8b4a2b', layer: number = 0){
         this.x = x
         this.y = y
         this.radius = radius
@@ -21,6 +24,9 @@ export class ArcWall implements Collider {
 
         this.r = r
         this.bounce = bounce
+
+        this.color = color
+        this.layer = layer
     }
 
     closestPoint(px: number, py: number): [number, number] {
@@ -41,7 +47,7 @@ export class ArcWall implements Collider {
     }
 
     display(ctx: CanvasRenderingContext2D): void {
-        ctx.strokeStyle = 'brown'
+        ctx.strokeStyle = this.color
         ctx.lineCap = 'round'
         ctx.lineWidth = this.r * 2
 

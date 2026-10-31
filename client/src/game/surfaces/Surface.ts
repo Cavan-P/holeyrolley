@@ -10,6 +10,8 @@ export class Surface {
 
     pushes: boolean
 
+    layer: number
+
     constructor(shape: Shape, color: string, dragMul: number = 1, rollMul: number = 1){
         this.shape = shape
         this.color = color
@@ -18,14 +20,11 @@ export class Surface {
         this.rollMul = rollMul
 
         this.pushes = false
+        this.layer = 0
     }
 
-    // Extra forces while the ball is on this surface (slopes, conveyors, ...).
-    // Does nothing by default; subclasses override it.
     affect(_ball: Ball, _dt: number): void {}
 
-    // Runs every physics step whether or not a ball is on it (timers, animations).
-    // Does nothing by default
     update(_dt: number): void {}
 
     display(ctx: CanvasRenderingContext2D): void {
@@ -36,7 +35,6 @@ export class Surface {
     }
 }
 
-// The surface the point is on. Later surfaces in the list sit on top of earlier ones.
-export function surfaceAt(surfaces: Surface[], x: number, y: number): Surface | undefined {
-    return surfaces.findLast(s => s.shape.contains(x, y))
+export function surfaceAt(surfaces: Surface[], x: number, y: number, layer: number = 0): Surface | undefined {
+    return surfaces.findLast(s => s.layer === layer && s.shape.contains(x, y))
 }

@@ -1,9 +1,5 @@
-export function createGrassPattern(ctx: CanvasRenderingContext2D): CanvasPattern {
+export function createGrassPattern(ctx: CanvasRenderingContext2D, turf: string, turfStripe: string): CanvasPattern {
     const STRIPE = 56
-
-    const css = getComputedStyle(document.documentElement)
-    const turf = css.getPropertyValue('--color-turf').trim()
-    const turfStripe = css.getPropertyValue('--color-turf-stripe').trim()
 
     const tile = document.createElement('canvas')
     tile.width = STRIPE * 2
