@@ -8,7 +8,17 @@ import { createTestHole } from './holes/testHole'
 
 const SCENERY = '#4e8f3c'
 
-export function startGame(canvas: HTMLCanvasElement): () => void {
+type GameEvents = {
+    onStroke: (strokes: number) => void
+    onHoleComplete: (result: HoleResult) => void
+}
+
+export type HoleResult = {
+    strokes: number,
+    par: number
+}
+
+export function startGame(canvas: HTMLCanvasElement, events: GameEvents): () => void {
     const ctx = canvas.getContext('2d')
 
     if(!ctx) throw new Error('2D canvas not supported')
@@ -22,6 +32,9 @@ export function startGame(canvas: HTMLCanvasElement): () => void {
 
     const ball = hole.balls[0]
     if(!ball) throw new Error('Hole has no balls')
+
+    let lastStrokes = 0
+    let reportedComplete = false
 
     const camera = new Camera(0, 0, window.innerWidth, window.innerHeight)
     camera.snapTo(ball.x, ball.y)
@@ -46,10 +59,19 @@ export function startGame(canvas: HTMLCanvasElement): () => void {
             acc -= STEP
         }
 
+        if(ball.strokes !== lastStrokes){
+            lastStrokes = ball.strokes
+            events.onStroke(ball.strokes)
+        }
+
+        if(ball.finished() && !reportedComplete){
+            reportedComplete = true
+            events.onHoleComplete({ strokes: ball.strokes, par: hole.par})
+        }
+
         camera.begin(ctx)
         const visArea = camera.visibleRect()
 
-        // Scenery outside the course, then the course's grass on top
         ctx.fillStyle = SCENERY
         ctx.fillRect(visArea.x, visArea.y, visArea.w, visArea.h)
 

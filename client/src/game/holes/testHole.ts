@@ -19,7 +19,6 @@ const RAIL = 6
 const RAIL_BOUNCE = 0.6
 const BUMPER_BOUNCE = 0.9
 
-// Joins the points into a closed ring of walls, last point back to the first
 function wallLoop(points: [number, number][], r: number, bounce: number): Wall[] {
     const walls: Wall[] = []
 
@@ -46,7 +45,6 @@ function diamond(cx: number, cy: number, size: number): Wall[] {
 export function createTestHole(): Hole {
     const tee = { x: 180, y: 1200 }
 
-    // Used for both the rails and the grass, so they always line up
     const outline: [number, number][] = [
         [0, 160],
         [160, 0],
@@ -70,23 +68,18 @@ export function createTestHole(): Hole {
             new Wall(800, 0, 800, 130, RAIL, RAIL_BOUNCE),
             new Wall(800, 230, 800, 360, RAIL, RAIL_BOUNCE),
 
-            // Round posts (same start and end point) that kick the ball away
             new Bumper(250, 240, 250, 240, 14),
             new Bumper(600, 250, 600, 250, 12),
 
-            // Curved backstop behind the cup
             new ArcWall(1370, 170, 80, -1.2, 1.2, RAIL, RAIL_BOUNCE)
         ],
         surfaces: [
-            // Pushes the ball toward the right rail on the way up
             new Slope(new RectShape(0, 620, 360, 140), 160, 0),
 
             new Ice(new RectShape(40, 800, 280, 110, 30)),
 
-            // Hit it hard enough to skip across, or go round through the gap above
             new Water(new RectShape(900, 140, 200, 220, 40)),
 
-            // Curved sand trap guarding the front of the cup
             new Sand(new ArcShape(1370, 170, 36, 66, 2.2, 4.1))
         ],
         cup: new Cup(1370, 170)

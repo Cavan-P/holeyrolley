@@ -2,10 +2,8 @@ import type { Collider } from './Collider'
 import { smooth } from '../utilities/smooth'
 import type { Surface } from '../surfaces/Surface'
 
-// Shots weaker than this don't count (stops accidental taps from using a stroke)
 export const MIN_POWER = 0.05
 
-// Seconds the shrink-and-fade takes when dropping into the cup, and when sinking in water
 const CUP_SINK_TIME = 0.35
 const WATER_SINK_TIME = 0.6
 
@@ -36,8 +34,9 @@ export class Ball {
     airTotal: number
     airPeak: number
 
-    // Seconds since it started sinking in water, or -1 when it isn't
     sinkTime: number
+
+    strokes: number
 
     constructor(x: number, y: number, color: string){
         this.x = x
@@ -67,6 +66,8 @@ export class Ball {
         this.airPeak = 0
 
         this.sinkTime = -1
+
+        this.strokes = 0
     }
 
     speed(): number {
@@ -81,6 +82,8 @@ export class Ball {
 
         this.vx = dx * power * this.maxSpeed
         this.vy = dy * power * this.maxSpeed
+
+        this.strokes++
 
         return true
     }
@@ -107,12 +110,12 @@ export class Ball {
         this.airTime = 0
     }
 
-    // Starts sinking where it is. Goes back to the last shot spot once the animation finishes
     sink(): void {
         this.sinkTime = 0
         this.vx = 0
         this.vy = 0
         this.airTime = 0
+        this.strokes++
     }
 
     sinking(): boolean {
@@ -213,11 +216,14 @@ export class Ball {
         }
     }
 
-    // 0 normally, rising to 1 as the ball finishes dropping into the cup or sinking in water
     private sinkProgress(): number {
         if(this.holed()) return Math.min(1, this.holedTime / CUP_SINK_TIME)
         if(this.sinking()) return Math.min(1, this.sinkTime / WATER_SINK_TIME)
         return 0
+    }
+
+    finished(): boolean {
+        return this.holed() && this.holedTime >= CUP_SINK_TIME
     }
 
     display(ctx: CanvasRenderingContext2D): void {
@@ -227,7 +233,6 @@ export class Ball {
         const h = this.height()
 
         ctx.save()
-        // Fades out and shrinks as it sinks
         ctx.globalAlpha = 1 - sink
 
         ctx.fillStyle = `rgba(0, 0, 0, ${0.22 - h * 0.08})`
