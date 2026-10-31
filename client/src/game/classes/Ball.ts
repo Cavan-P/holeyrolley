@@ -1,5 +1,6 @@
-import { Wall } from './Wall'
+import type { Wall } from './Wall'
 import { smooth } from '../utilities/smooth'
+import type { Surface } from '../surfaces/Surface'
 
 export class Ball {
     x: number
@@ -113,7 +114,10 @@ export class Ball {
         }
     }
 
-    update(dt: number, walls: Wall[]): void {
+    update(dt: number, walls: Wall[], sf: Surface | undefined): void {
+        const drag = this.drag * (sf?.dragMul ?? 1)
+        const roll = this.roll * (sf?.rollMul ?? 1)
+
         if(this.holed()){
             this.holedTime += dt
 
@@ -122,7 +126,13 @@ export class Ball {
 
             this.vx = 0
             this.vy = 0
+
+            return
         }
+
+        sf?.affect(this, dt)
+
+        const pushed = sf?.pushes ?? false
 
         this.x += this.vx * dt
         this.y += this.vy * dt
@@ -130,8 +140,8 @@ export class Ball {
         const s: number = this.speed()
 
         if(s > 0){
-            const newS = Math.max(0, s - (s * this.drag + this.roll) * dt)
-            if(newS < this.stopSpeed){
+            const newS = Math.max(0, s - (s * drag + roll) * dt)
+            if(newS < this.stopSpeed && !pushed){
                 this.vx = 0
                 this.vy = 0
             }

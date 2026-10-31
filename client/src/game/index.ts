@@ -6,6 +6,13 @@ import { createGrassPattern }from './art/grass'
 import { drawAim } from './art/aim'
 import { Cup } from './classes/Cup'
 
+import { Sand } from './surfaces/Sand'
+import { Slope } from './surfaces/Slope'
+
+import { CircleShape } from './shapes/CircleShape'
+import { RectShape } from './shapes/RectShape'
+import { surfaceAt } from './surfaces/Surface'
+
 export function startGame(canvas: HTMLCanvasElement): () => void {
     const ctx = canvas.getContext('2d')
 
@@ -22,6 +29,11 @@ export function startGame(canvas: HTMLCanvasElement): () => void {
     const grass = createGrassPattern(ctx)
     const cup = new Cup(1200, 1200)
 
+    const surfaces = [
+        new Sand(new CircleShape(400, 400, 200)),
+        new Slope(new RectShape(800, 800, 300, 100), 200, 100)
+    ]
+
     const mouse = {x: 0, y: 0}
     let aiming = false
 
@@ -30,8 +42,12 @@ export function startGame(canvas: HTMLCanvasElement): () => void {
         last = now
 
         while(acc >= STEP){
-            ball.update(STEP, [wall])
+            const sf = surfaceAt(surfaces, ball.x, ball.y)
+
+            ball.update(STEP, [wall], sf)
+
             cup.update(STEP, ball)
+
             camera.follow(ball, STEP)
             acc -= STEP
         }
@@ -43,8 +59,9 @@ export function startGame(canvas: HTMLCanvasElement): () => void {
         ctx.fillStyle = grass
         ctx.fillRect(visArea.x, visArea.y, visArea.w, visArea.h)
 
-        wall.display(ctx)
+        for(const s of surfaces) s.display(ctx)
 
+        wall.display(ctx)
         cup.display(ctx)
 
         ball.display(ctx)
