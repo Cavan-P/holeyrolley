@@ -9,6 +9,7 @@ import { getTheme } from './art/themes'
 
 import { setupInput } from './input'
 import { buildHole } from './build'
+import { getPrefs } from '../settings/store'
 
 type GameEvents = {
     onStroke: (strokes: number) => void
@@ -81,7 +82,8 @@ export function startGame(canvas: HTMLCanvasElement, course: CourseData, events:
 
         while(acc >= STEP){
             hole.update(STEP)
-            camera.follow(ball, STEP)
+            // With follow off, the camera waits for the ball to stop, then glides over to it
+            if(getPrefs().cameraFollow || !ball.isMoving()) camera.follow(ball, STEP)
             acc -= STEP
         }
 
@@ -110,7 +112,7 @@ export function startGame(canvas: HTMLCanvasElement, course: CourseData, events:
         hole.draw(ctx, ball)
 
         const aim = input.aim()
-        if(aim) drawAim(ctx, ball, aim)
+        if(aim && getPrefs().aimGuide) drawAim(ctx, ball, aim)
 
         camera.end(ctx)
 

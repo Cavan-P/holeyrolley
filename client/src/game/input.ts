@@ -1,4 +1,5 @@
 import type { Camera } from './classes/Camera'
+import { getPrefs } from '../settings/store'
 
 type Point = { x: number, y: number }
 
@@ -12,7 +13,15 @@ export function aimFromMouse(ball: Point, mouse: Point): Aim {
     const len = Math.sqrt(px * px + py * py)
     if(!len) return { dx: 0, dy: 0, power: 0 }
 
-    return { dx: px / len, dy: py / len, power: Math.min(len, MAX_PULL) / MAX_PULL }
+    let dx = px / len
+    let dy = py / len
+
+    if(getPrefs().dragDirection === 'front'){
+        dx = -dx
+        dy = -dy
+    }
+
+    return { dx: dx, dy: dy, power: Math.min(len, MAX_PULL) / MAX_PULL }
 }
 
 type InputOptions = {

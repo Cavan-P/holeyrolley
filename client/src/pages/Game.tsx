@@ -4,6 +4,7 @@ import { startGame, type HoleResult } from '../game'
 import { defaultCourse } from '../game/courses/defaultCourse'
 import { loadDraft } from '../editor/storage'
 import { Button } from '../components/Button'
+import { usePrefs } from '../settings/useSetting'
 
 function holeTitle(result: HoleResult): string {
     if(result.strokes === 1) return 'Hole in One!'
@@ -131,6 +132,7 @@ export function Game(){
     const [card, setCard] = useState<HoleResult[]>([])
 
     const navigate = useNavigate()
+    const prefs = usePrefs()
 
     // /play?test&hole=2 is a test run from the level editor: play its draft, starting at that hole
     const [params] = useSearchParams()
@@ -158,9 +160,11 @@ export function Game(){
     return (
         <>
             <canvas ref={canvasRef} className='touch-none fixed inset-0 w-full h-full block' />
-            <div className='fixed top-4 left-4 pointer-events-none font-sans text-ink text-xl bg-card pb-2 pt-2 pr-4 pl-4 rounded-full'>
-                Strokes: {strokes}
-            </div>
+            {prefs.strokeCounter && (
+                <div className='fixed top-4 left-4 pointer-events-none font-sans text-ink text-xl bg-card pb-2 pt-2 pr-4 pl-4 rounded-full'>
+                    Strokes: {strokes}
+                </div>
+            )}
             {testing && (
                 <button type='button' onClick={exit} className='fixed top-4 right-4 font-sans font-bold text-ink bg-card shadow-card rounded-full px-4 py-2 hover:bg-sky'>
                     Back to editor
