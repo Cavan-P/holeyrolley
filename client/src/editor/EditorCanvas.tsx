@@ -47,7 +47,7 @@ export function EditorCanvas({ editor, tool, setTool, shapeKind, grid, preview }
     const gesture = gestureFor(tool, shapeKind)
     const theme = getTheme(course.theme)
 
-    const built = useMemo(() => buildHole(hole, course, false), [hole, course.theme, course.assets])
+    const built = useMemo(() => buildHole(hole, course, null), [hole, course.theme, course.assets])
 
     const live = useRef({ built, editor, tool, shapeKind, grid, preview, draftPoints, gesture, theme })
     live.current = { built, editor, tool, shapeKind, grid, preview, draftPoints, gesture, theme }

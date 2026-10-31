@@ -1,4 +1,4 @@
-import type { CourseData, CourseObject, HoleData } from '@holey/shared'
+import type { Cosmetics, CourseData, CourseObject, HoleData } from '@holey/shared'
 import { Hole, type Fairway, type LayerDrawables, type Mover } from './classes/Hole'
 import { Ball } from './classes/Ball'
 import { Cup } from './classes/Cup'
@@ -34,7 +34,7 @@ type Built = {
     drawables: [LayerDrawables, LayerDrawables]
 }
 
-export function buildHole(data: HoleData, course: Pick<CourseData, 'theme' | 'assets'>, withBall: boolean = true): Hole {
+export function buildHole(data: HoleData, course: Pick<CourseData, 'theme' | 'assets'>, player: Cosmetics | null): Hole {
     const theme = getTheme(course.theme)
 
     const built: Built = {
@@ -53,7 +53,7 @@ export function buildHole(data: HoleData, course: Pick<CourseData, 'theme' | 'as
         tee: { ...data.tee },
         theme,
         ...built,
-        balls: withBall ? [new Ball(data.tee.x, data.tee.y, '#FF0000')] : [],
+        balls: player ? [new Ball(data.tee.x, data.tee.y, player)] : [],
         cup: new Cup(data.cup.x, data.cup.y)
     })
 }

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { startGame, type HoleResult } from '../game'
-import { defaultCourse } from '../game/courses/defaultCourse'
+import { darkwoodMeadows } from '../game/courses/darkwoodMeadows'
 import { loadDraft } from '../editor/storage'
 import { Button } from '../components/Button'
 import { usePrefs } from '../settings/useSetting'
+import { getCosmetics } from '../locker/store'
 
 function holeTitle(result: HoleResult): string {
     if(result.strokes === 1) return 'Hole in One!'
@@ -20,13 +21,11 @@ function scoreLabel(diff: number): string {
     return diff > 0 ? `+${diff}` : `${diff}`
 }
 
-// Gold under par, plain at par, dimmer over par
 function scoreColor(diff: number): string {
     if(diff < 0) return 'text-orb'
     return diff === 0 ? 'text-white' : 'text-white/70'
 }
 
-// A golf-style scorecard: one column per hole played so far, plus a total
 function Scorecard({ card }: { card: HoleResult[] }){
     const totalPar = card.reduce((sum, h) => sum + h.par, 0)
     const totalStrokes = card.reduce((sum, h) => sum + h.strokes, 0)
@@ -34,7 +33,6 @@ function Scorecard({ card }: { card: HoleResult[] }){
 
     const rowLabel = 'px-4 py-1.5 text-left text-xs font-extrabold uppercase tracking-widest text-white/70'
     const cell = 'px-4 py-1.5 text-center'
-    // The hole just finished gets a faint highlight
     const latest = (i: number) => i === card.length - 1 ? 'bg-white/10' : ''
     const total = 'px-4 py-1.5 text-center font-extrabold border-l border-white/20'
 
@@ -134,7 +132,6 @@ export function Game(){
     const navigate = useNavigate()
     const prefs = usePrefs()
 
-    // /play?test&hole=2 is a test run from the level editor: play its draft, starting at that hole
     const [params] = useSearchParams()
     const testing = params.has('test')
     const startHole = Number(params.get('hole') ?? 0) || 0
@@ -149,9 +146,11 @@ export function Game(){
             setCard(prev => [...prev, r])
         }
 
-        const course = (testing ? loadDraft() : null) ?? defaultCourse
+        const course = (testing ? loadDraft() : null) ?? darkwoodMeadows
 
-        const game = startGame(canvas, course, { onStroke: setStrokes, onHoleComplete }, startHole)
+        const cosmetics = getCosmetics()
+
+        const game = startGame(canvas, course, { onStroke: setStrokes, onHoleComplete }, cosmetics, startHole)
         gameRef.current = game
 
         return () => game.dispose()

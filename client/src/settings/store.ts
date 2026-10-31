@@ -2,24 +2,20 @@ import { type TrackId } from '../audio/tracks'
 
 
 export type Prefs = {
-    // Controls
     dragDirection: 'back' | 'front'
     aimGuide: boolean
     cameraFollow: boolean
 
-    // Audio
     masterVolume: number
     musicVolume: number
     sfxVolume: number
     muteInBackground: boolean
     soundtrack: TrackId
 
-    // Display
     theme: 'day' | 'night' | 'system'
     reduceMotion: boolean
     strokeCounter: boolean
 
-    // Multiplayer
     nameTags: boolean
     othersAimLines: boolean
     turnChime: boolean

@@ -1,4 +1,4 @@
-import type { CourseData } from '@holey/shared'
+import type { Cosmetics, CourseData } from '@holey/shared'
 import { Camera } from './classes/Camera'
 import { type Hole } from './classes/Hole'
 import { type Ball } from './classes/Ball'
@@ -23,7 +23,7 @@ export type HoleResult = {
     isLast: boolean
 }
 
-export function startGame(canvas: HTMLCanvasElement, course: CourseData, events: GameEvents, startHole: number = 0): {nextHole: () => void, dispose: () => void} {
+export function startGame(canvas: HTMLCanvasElement, course: CourseData, events: GameEvents, cosmetics: Cosmetics, startHole: number = 0): {nextHole: () => void, dispose: () => void} {
     const ctx = canvas.getContext('2d')
 
     if(!ctx) throw new Error('2D canvas not supported')
@@ -49,7 +49,7 @@ export function startGame(canvas: HTMLCanvasElement, course: CourseData, events:
 
         holeIndex = index
 
-        hole = buildHole(data, course)
+        hole = buildHole(data, course, cosmetics)
 
         const first = hole.balls[0]
         if(!first) throw new Error('Hole has no balls')

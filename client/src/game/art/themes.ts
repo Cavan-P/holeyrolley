@@ -55,6 +55,22 @@ export const THEMES: Record<string, Theme> = {
         bumperFlash: '#fff1a8',
         decor: '#3d9e8c'
     },
+    darkwood: {
+        label: 'Darkwood',
+        scenery: '#2c4a2a',
+        turf: '#6cc04a',
+        turfStripe: '#74c652',
+        rail: '#4a2e1c',
+        sand: '#e3cc86',
+        ice: '#d6f1fb',
+        water: '#3a8fc9',
+        slope: '#5ea83f',
+        bridge: '#8a5a32',
+        bridgeRail: '#4a2e1c',
+        bumper: '#e85d75',
+        bumperFlash: '#ffd23f',
+        decor: '#1f3a1c'
+    },
     night: {
         label: 'Night',
         scenery: '#1d3326',

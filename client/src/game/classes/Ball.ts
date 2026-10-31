@@ -1,6 +1,8 @@
 import type { Collider } from './Collider'
 import { smooth } from '../utilities/smooth'
 import type { Surface } from '../surfaces/Surface'
+import type { Cosmetics } from '@holey/shared'
+import { drawHat } from '../art/hats'
 
 export const MIN_POWER = 0.05
 
@@ -11,6 +13,7 @@ export class Ball {
     x: number
     y: number
 
+    cosmetics: Cosmetics
     color: string
 
     rad: number
@@ -41,7 +44,7 @@ export class Ball {
 
     layer: number
 
-    constructor(x: number, y: number, color: string){
+    constructor(x: number, y: number, cosmetics: Cosmetics){
         this.x = x
         this.y = y
 
@@ -61,7 +64,8 @@ export class Ball {
         this.cupX = 0
         this.cupY = 0
 
-        this.color = color
+        this.cosmetics = cosmetics
+        this.color = this.cosmetics.color
 
         this.holedTime = -1
 
@@ -255,6 +259,8 @@ export class Ball {
         ctx.beginPath()
         ctx.ellipse(this.x, this.y - h * 10, r, r, 0, 0, 2 * Math.PI)
         ctx.fill()
+
+        drawHat(ctx, this.cosmetics.hat, this.x, this.y - h * 10, r)
 
         ctx.restore()
     }

@@ -24,7 +24,6 @@ export function Settings(){
     const prefs = usePrefs()
 
     return (
-        // #ui is position: fixed, so the page can't scroll the window. It scrolls itself instead
         <div className='h-full w-full overflow-y-auto bg-sky text-ink'>
             <div className='max-w-6xl px-4 sm:px-14 pt-14 pb-16 flex flex-col gap-7'>
                 <header className='flex flex-col gap-3'>

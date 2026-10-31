@@ -9,13 +9,13 @@ import { type Surface, surfaceAt } from '../surfaces/Surface'
 import type { Shape } from '../shapes/Shape'
 import type { Theme } from '../art/themes'
 import { evaluateMotion } from '../utilities/motion'
+import { burst, drawParticles, stepParticles, type Particle } from '../art/celebrations'
+import { getPrefs } from '../../settings/store'
 
-// Something that follows a motion path. Its colliders/shapes all share the transform
 export type Mover = { transform: Transform, path: MotionPath }
 
 export type Fairway = { shape: Shape, color: string | null }
 
-// What gets drawn on one layer: ground-level things (surfaces, decks) first, then solid things on top
 export type LayerDrawables = { ground: Drawable[], solid: Drawable[] }
 
 type HoleOptions = {
@@ -36,7 +36,7 @@ export class Hole {
     par: number
     tee: { x: number, y: number }
     theme: Theme
-    // Seconds since the hole started. Drives everything on a motion path
+
     time: number
 
     fairways: Fairway[]
@@ -45,8 +45,12 @@ export class Hole {
     surfaces: Surface[]
     bridges: Bridge[]
     movers: Mover[]
+
     drawables: [LayerDrawables, LayerDrawables]
+
     cup: Cup
+
+    particles: Particle[]
 
     private wallsByLayer: [Collider[], Collider[]]
 
@@ -62,15 +66,18 @@ export class Hole {
         this.surfaces = o.surfaces
         this.bridges = o.bridges
         this.movers = o.movers
+
         this.drawables = o.drawables
+
         this.cup = o.cup
+
+        this.particles = []
 
         this.wallsByLayer = [o.walls.filter(w => w.layer === 0), o.walls.filter(w => w.layer === 1)]
 
         this.setTime(0)
     }
 
-    // Puts every moving object where it should be at time t
     setTime(t: number, dt: number = 0): void {
         this.time = t
         for(const m of this.movers){
@@ -92,13 +99,19 @@ export class Hole {
             const sf = surfaceAt(this.surfaces, ball.x, ball.y, layer)
             ball.update(dt, this.wallsByLayer[layer], sf)
 
-            // Rolled off the end of a deck: back down to the ground
             if(ball.layer === 1 && !ball.airborne() && !this.bridges.some(b => b.shape.contains(ball.x, ball.y))){
                 ball.layer = 0
             }
 
+            const wasHoled = ball.holed()
+
             if(ball.layer === 0) this.cup.update(dt, ball)
+
+            if(!wasHoled && ball.holed() && !getPrefs().reduceMotion)
+                this.particles.push(...burst(ball.cosmetics.celebration, this.cup.x, this.cup.y))
         }
+
+        this.particles = stepParticles(this.particles, dt)
     }
 
     drawGround(ctx: CanvasRenderingContext2D, grass: CanvasPattern): void {
@@ -107,7 +120,6 @@ export class Hole {
 
             ctx.save()
 
-            // Everything until restore() only shows up inside this fairway
             ctx.beginPath()
             f.shape.trace(ctx)
             ctx.clip()
@@ -115,8 +127,6 @@ export class Hole {
             ctx.fillStyle = f.color ?? grass
             ctx.fillRect(b.x, b.y, b.w, b.h)
 
-            // A thick dark line along the outline. Only its inner half is inside the clip,
-            // so it reads as a soft shadow where the grass meets the rails
             ctx.strokeStyle = 'rgba(0, 0, 0, 0.12)'
             ctx.lineWidth = 36
             ctx.lineJoin = 'round'
@@ -128,7 +138,6 @@ export class Hole {
         }
     }
 
-    // `focus` is the ball the flag fades out for. Leave it out (e.g. in the editor) to always show the flag
     draw(ctx: CanvasRenderingContext2D, focus?: Ball): void {
         const [ground, raised] = this.drawables
 
@@ -140,6 +149,8 @@ export class Hole {
         for(const d of raised.ground) d.display(ctx)
         for(const d of raised.solid) d.display(ctx)
         for(const ball of this.balls) if(ball.layer === 1) ball.display(ctx)
+
+        drawParticles(ctx, this.particles)
 
         this.cup.drawFlag(ctx, focus ?? null)
     }
