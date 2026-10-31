@@ -1,6 +1,7 @@
 import { closestOnSegment } from '../utilities/closestOnSegment'
+import type { Collider } from './Collider'
 
-export class Wall {
+export class Wall implements Collider {
     x1: number
     y1: number
     

@@ -24,6 +24,10 @@ export class Surface {
     // Does nothing by default; subclasses override it.
     affect(_ball: Ball, _dt: number): void {}
 
+    // Runs every physics step whether or not a ball is on it (timers, animations).
+    // Does nothing by default
+    update(_dt: number): void {}
+
     display(ctx: CanvasRenderingContext2D): void {
         ctx.fillStyle = this.color
         ctx.beginPath()

@@ -24,7 +24,7 @@ export class Cup {
     }
 
     update(dt: number, ball: Ball): void {
-        if(ball.holed()) return
+        if(ball.holed() || ball.airborne() || ball.sinking()) return
 
         const dx = ball.x - this.x
         const dy = ball.y - this.y

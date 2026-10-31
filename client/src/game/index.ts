@@ -6,6 +6,8 @@ import { drawAim } from './art/aim'
 import { setupInput } from './input'
 import { createTestHole } from './holes/testHole'
 
+const SCENERY = '#4e8f3c'
+
 export function startGame(canvas: HTMLCanvasElement): () => void {
     const ctx = canvas.getContext('2d')
 
@@ -30,7 +32,7 @@ export function startGame(canvas: HTMLCanvasElement): () => void {
         canvas,
         camera,
         origin: () => ball,
-        canAim: () => !ball.isMoving() && !ball.holed(),
+        canAim: () => !ball.isMoving() && !ball.holed() && !ball.sinking(),
         onShoot: ({ dx, dy, power }) => ball.shoot(dx, dy, power)
     })
 
@@ -47,9 +49,11 @@ export function startGame(canvas: HTMLCanvasElement): () => void {
         camera.begin(ctx)
         const visArea = camera.visibleRect()
 
-        ctx.fillStyle = grass
+        // Scenery outside the course, then the course's grass on top
+        ctx.fillStyle = SCENERY
         ctx.fillRect(visArea.x, visArea.y, visArea.w, visArea.h)
 
+        hole.drawGround(ctx, grass)
         hole.draw(ctx, ball)
 
         const aim = input.aim()
