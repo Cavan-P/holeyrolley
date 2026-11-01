@@ -1,4 +1,3 @@
-export type ClientMsg = | { type: "join"; room: string; name: string } | { type: "shoot"; angle: number; power: number }
-
+export * from './messages'
 export * from './course'
 export * from './cosmetics'
