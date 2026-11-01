@@ -1,6 +1,7 @@
 import { type Cosmetics } from './cosmetics'
 
 export const maxNameLength = 16
+export const maxPlayers = 4
 
 export type Player = {
     id: string,
