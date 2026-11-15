@@ -12,7 +12,6 @@ export type Prefs = {
     muteInBackground: boolean
     soundtrack: TrackId
 
-    theme: 'day' | 'night' | 'system'
     reduceMotion: boolean
     strokeCounter: boolean
     minimap: boolean
@@ -33,7 +32,6 @@ const DEFAULTS: Prefs = {
     muteInBackground: true,
     soundtrack: 'holeInOne',
 
-    theme: 'day',
     reduceMotion: false,
     strokeCounter: true,
     minimap: true,

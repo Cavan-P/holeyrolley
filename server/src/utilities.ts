@@ -1,4 +1,4 @@
-import type { Cosmetics, ServerMsg } from '@holey/shared';
+import { OBSTACLE_KINDS, type Cosmetics, type ServerMsg } from '@holey/shared';
 import { type WebSocket } from 'ws'
 import type { Member, Room } from './types';
 import { randomUUID } from 'node:crypto';
@@ -18,7 +18,8 @@ export function sendRoom(room: Room): void {
             players: players,
             yourId: member.player.id,
             hostId: room.hostId,
-            roomPhase: room.phase
+            roomPhase: room.phase,
+            pieces: [...room.pieces.values()]
         })
     }
 }
@@ -31,7 +32,8 @@ export function sendState(room: Room): void {
         x: b.x,
         y: b.y,
         layer: b.layer,
-        moving: b.isMoving()
+        moving: b.isMoving(),
+        holed: b.holed()
     }))
 
     const msg: ServerMsg = {
@@ -50,7 +52,8 @@ export function makeMember(name: string, cosmetics: Cosmetics, socket: WebSocket
         player: {
             id: randomUUID(),
             name,
-            cosmetics
+            cosmetics,
+            obstacle: OBSTACLE_KINDS[Math.floor(Math.random() * OBSTACLE_KINDS.length)]!
         },
         socket
     }

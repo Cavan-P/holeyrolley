@@ -44,8 +44,16 @@ export function objectBounds(o: CourseObject): Bounds {
         case 'sand':
         case 'ice':
         case 'water':
+        case 'lava':
         case 'slope':
+        case 'faller':
+        case 'spring':
+        case 'conveyor':
             return buildShape(o.shape).bounds()
+        case 'portal':
+            return boundsOf([[o.a.x, o.a.y], [o.b.x, o.b.y]], o.radius)
+        case 'magnet':
+            return { x: o.x - o.radius, y: o.y - o.radius, w: o.radius * 2, h: o.radius * 2 }
         case 'wall':
         case 'curveWall':
             return boundsOf(wallPath(o), o.thickness)

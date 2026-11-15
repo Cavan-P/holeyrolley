@@ -1,10 +1,10 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { maxPlayers, type Player } from '@holey/shared'
-import { Button } from '../components/Button'
+import { COURSES, STROKE_LIMITS, TIME_LIMITS, maxPlayers, type ObstacleKind, type Player } from '@holey/shared'
+import { Arrow, Button } from '../components/Button'
 import { BallPreview } from '../components/BallPreview'
-import { SettingsSection, SettingRow } from '../components/SettingsLayout'
+import { HolePreview } from '../components/HolePreview'
 import { Toggle } from '../components/SettingsControls'
 import { connect, leave, send } from '../network/connection'
 import { useConnection } from '../network/useConnection'
@@ -15,25 +15,59 @@ import { startLobby } from '../game/lobby'
 
 function PlayerRow({ player, you, host }: { player: Player, you: boolean, host: boolean }){
     return (
-        <li className='flex items-center gap-4 py-3 border-t border-ink/10'>
-            <div className='size-12 shrink-0 rounded-full bg-sky grid place-items-center'>
-                <BallPreview cosmetics={player.cosmetics} view={34} className='size-12' />
-            </div>
-            <span className='font-extrabold text-lg truncate'>{player.name}</span>
+        <li className='flex items-center gap-3.5 h-15 border-t-2 border-line first:border-t-0'>
+            <BallPreview cosmetics={player.cosmetics} view={34} className='size-11 shrink-0' />
+            <span className='font-black text-lg truncate'>{player.name}</span>
             <span className='ml-auto flex gap-2 shrink-0'>
-                {host && <span className='rounded-full bg-putt text-putt-ink px-3 py-1 text-xs font-extrabold uppercase tracking-wider'>Host</span>}
-                {you && <span className='rounded-full bg-track px-3 py-1 text-xs font-extrabold uppercase tracking-wider'>You</span>}
+                {you && <span className='rounded-full bg-ink text-card px-3 py-1 text-xs font-black uppercase tracking-wider'>You</span>}
+                {host && <span className='rounded-full bg-putt text-putt-ink px-3 py-1 text-xs font-black uppercase tracking-wider'>Host</span>}
             </span>
         </li>
     )
 }
 
+const OBSTACLE_NAMES: Record<ObstacleKind, string> = {
+    post: 'Post',
+    bumper: 'Bumper',
+    sand: 'Sand trap',
+    water: 'Pond',
+    wall: 'Wall'
+}
+
+function Choices<T extends number | null>({ label, description, options, value, labelOf, onPick }: { label: string, description: string, options: readonly T[], value: T, labelOf: (v: T) => string, onPick: ((v: T) => void) | null }){
+    return (
+        <div className='flex flex-col gap-2.5 pt-3 border-t-2 border-line'>
+            <div className='flex flex-col'>
+                <span className='font-black text-lg'>{label}</span>
+                <span className='text-sub'>{description}</span>
+            </div>
+            {onPick ? (
+                <div className='flex flex-wrap gap-1.5 p-1.5 rounded-2xl bg-line'>
+                    {options.map(o => (
+                        <button
+                            key={String(o)}
+                            type='button'
+                            aria-pressed={o === value}
+                            onClick={() => onPick(o)}
+                            className={`${o === value ? 'bg-ink text-card font-black' : 'font-extrabold'} flex-1 h-10 px-2 rounded-xl text-sm whitespace-nowrap`}
+                        >
+                            {labelOf(o)}
+                        </button>
+                    ))}
+                </div>
+            ) : (
+                <span className='self-start rounded-full bg-line px-4 py-1.5 font-black'>{labelOf(value)}</span>
+            )}
+        </div>
+    )
+}
+
 function Notice({ text, action, onAction }: { text: string, action?: string, onAction?: () => void }){
     return (
-        <div className='h-full w-full overflow-y-auto bg-sky text-ink'>
-            <div className='max-w-xl px-4 sm:px-14 pt-14 flex flex-col gap-5'>
-                <h1 className='text-6xl sm:text-7xl font-bold font-display tracking-wide'>Tee Box</h1>
-                <p className='text-lg text-sub'>{text}</p>
+        <div className='h-full w-full overflow-y-auto bg-mowed text-chalk'>
+            <div className='max-w-xl px-4 sm:px-8 pt-14 flex flex-col gap-5'>
+                <h1 className='font-display text-7xl sm:text-8xl'>Tee Box</h1>
+                <p className='text-xl text-ground-sub'>{text}</p>
                 {action && onAction && <Button label={action} onClick={onAction} splash={true} arrow={true} />}
             </div>
         </div>
@@ -49,7 +83,9 @@ export function TeeBox(){
 
     const triedJoin = useRef(false)
     const canvasRef = useRef<HTMLCanvasElement>(null)
+    const lobbyRef = useRef<ReturnType<typeof startLobby> | null>(null)
     const [copied, setCopied] = useState(false)
+    const [placing, setPlacing] = useState(false)
 
     useEffect(() => { connect() }, [])
 
@@ -76,7 +112,8 @@ export function TeeBox(){
         const canvas = canvasRef.current
         if(!canvas) return
 
-        const lobby = startLobby(canvas)
+        const lobby = startLobby(canvas, () => setPlacing(false))
+        lobbyRef.current = lobby
         return () => lobby.dispose()
     }, [inRoom])
 
@@ -91,6 +128,13 @@ export function TeeBox(){
     const isHost = room.yourId === room.hostId
     const host = room.players.find(p => p.id === room.hostId)
     const openSlots = Math.max(0, maxPlayers - room.players.length)
+    const me = room.players.find(p => p.id === room.yourId)
+    const placed = room.pieces.some(p => p.owner === room.yourId)
+
+    const togglePlacing = () => {
+        lobbyRef.current?.setPlacing(!placing)
+        setPlacing(!placing)
+    }
 
     const copyLink = async () => {
         try {
@@ -106,73 +150,140 @@ export function TeeBox(){
         navigate('/party')
     }
 
+    const settings = room.settings
+    const course = COURSES[settings.course]
+    const update = (next: Partial<typeof settings>) => send({ type: 'update', settings: { ...settings, ...next } })
+
     return (
-        <div className='h-full w-full overflow-y-auto bg-sky text-ink'>
-            <div className='max-w-[1600px] px-4 sm:px-14 pt-14 pb-16 flex flex-col gap-7'>
-                <header className='flex flex-col gap-2'>
-                    <p className='text-sm font-extrabold uppercase tracking-[0.3em] text-sub'>Party code</p>
-                    <div className='flex flex-wrap items-center gap-x-6 gap-y-3'>
-                        <h1 className='text-7xl sm:text-8xl font-bold font-display tracking-[0.15em]'>{room.code}</h1>
+        <div className='h-full w-full overflow-y-auto bg-mowed text-chalk'>
+            <div className='max-w-[1600px] mx-auto px-4 sm:px-8 pt-8 pb-12 flex flex-col gap-7'>
+                <header className='flex flex-wrap items-center justify-between gap-5'>
+                    <div className='flex flex-wrap items-center gap-5'>
+                        <span className='font-black text-sm uppercase tracking-[0.25em] text-ground-sub'>Party code</span>
+                        <div className='flex gap-2' aria-label={`Party code ${room.code}`}>
+                            {room.code.split('').map((c, i) => (
+                                <span key={i} className='w-16 h-19 rounded-2xl bg-card text-ink press-card grid place-items-center font-display text-5xl'>{c}</span>
+                            ))}
+                        </div>
                         <button
                             type='button'
                             onClick={copyLink}
-                            className='rounded-full bg-card shadow-card px-5 py-2.5 font-extrabold'
+                            className='h-12 px-5 rounded-full bg-white/10 hover:bg-white/16 font-extrabold'
                         >
                             {copied ? 'Link copied!' : 'Copy invite link'}
                         </button>
                     </div>
+                    <button type='button' onClick={leaveParty} className='h-12 px-5 rounded-full bg-white/8 hover:bg-white/14 font-extrabold'>
+                        Leave party
+                    </button>
                 </header>
 
-                <div className='grid md:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] gap-5 items-start'>
+                <div className='grid lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] gap-6 items-start'>
                     <div className='flex flex-col gap-5'>
-                        <SettingsSection title={`Players (${room.players.length}/${maxPlayers})`}>
-                            <ul className='pt-2 pb-1'>
+                        <section className='bg-card text-ink rounded-3xl shadow-card px-6 pt-5 pb-2'>
+                            <h2 className='font-display text-3xl pb-2'>Players {room.players.length}/{maxPlayers}</h2>
+                            <ul>
                                 {room.players.map(p => (
                                     <PlayerRow key={p.id} player={p} you={p.id === room.yourId} host={p.id === room.hostId} />
                                 ))}
                                 {Array.from({ length: openSlots }, (_, i) => (
-                                    <li key={`open-${i}`} className='flex items-center gap-4 py-3 border-t border-ink/10 text-sub'>
-                                        <div className='size-12 shrink-0 rounded-full border-2 border-dashed border-ink/20' />
-                                        <span>Waiting for a friend…</span>
+                                    <li key={`open-${i}`} className='flex items-center gap-3.5 h-15 border-t-2 border-line text-sub'>
+                                        <div className='size-10 mx-0.5 shrink-0 rounded-full border-3 border-dashed border-card-deep' />
+                                        <span className='font-bold'>Waiting for a friend…</span>
                                     </li>
                                 ))}
                             </ul>
-                        </SettingsSection>
+                        </section>
 
-                        <SettingsSection title='Room settings' description={isHost ? 'Only you can change these.' : `${host?.name ?? 'The host'} picks these.`}>
-                            <SettingRow label='Ball collision' description='Balls bump into each other.'>
+                        <section className='bg-card text-ink rounded-3xl shadow-card p-6 flex flex-col gap-3'>
+                            <div className='flex items-baseline justify-between gap-3'>
+                                <h2 className='font-display text-3xl'>Course</h2>
+                                <span className='text-sm font-extrabold text-sub'>{isHost ? 'Only you can change these' : `${host?.name ?? 'The host'} picks these`}</span>
+                            </div>
+                            {Object.entries(COURSES).map(([id, c]) => {
+                                const picked = id === settings.course
+                                if(!isHost && !picked) return null
+
+                                return (
+                                    <button
+                                        key={id}
+                                        type='button'
+                                        disabled={!isHost}
+                                        aria-pressed={picked}
+                                        onClick={() => update({ course: id })}
+                                        className={`${picked ? 'bg-white border-putt' : 'border-line'} flex items-center gap-3 min-h-15 p-2 pr-3 rounded-2xl border-3 text-left disabled:cursor-default`}
+                                    >
+                                        <HolePreview course={c} hole='showcase' className='w-14 h-11 shrink-0 rounded-xl' />
+                                        <span className='flex flex-col'>
+                                            <span className='font-black'>{c.name}</span>
+                                            <span className='text-sm font-bold text-sub'>{c.holes.length} holes</span>
+                                        </span>
+                                    </button>
+                                )
+                            })}
+                            <div className='flex items-center justify-between gap-4 pt-3 border-t-2 border-line'>
+                                <div className='flex flex-col'>
+                                    <span className='font-black text-lg'>Ball collision</span>
+                                    <span className='text-sub'>Balls bump into each other.</span>
+                                </div>
                                 {isHost ? (
-                                    <Toggle
-                                        label='Ball collision'
-                                        on={room.settings.collision}
-                                        onChange={on => send({ type: 'update', settings: { collision: on } })}
-                                    />
+                                    <Toggle label='Ball collision' on={settings.collision} onChange={on => update({ collision: on })} />
                                 ) : (
-                                    <span className='rounded-full bg-track px-4 py-1.5 font-extrabold'>{room.settings.collision ? 'On' : 'Off'}</span>
+                                    <span className='rounded-full bg-line px-4 py-1.5 font-black'>{settings.collision ? 'On' : 'Off'}</span>
                                 )}
-                            </SettingRow>
-                        </SettingsSection>
+                            </div>
+                            <Choices
+                                label='Stroke limit'
+                                description='Pick up your ball after this many.'
+                                options={STROKE_LIMITS}
+                                value={settings.strokeLimit}
+                                labelOf={v => v === null ? 'Off' : `Par +${v}`}
+                                onPick={isHost ? v => update({ strokeLimit: v }) : null}
+                            />
+                            <Choices
+                                label='Time limit'
+                                description='Per hole. Anyone still putting gets picked up.'
+                                options={TIME_LIMITS}
+                                value={settings.timeLimit}
+                                labelOf={v => v === null ? 'Off' : v % 60 ? `${v}s` : `${v / 60} min`}
+                                onPick={isHost ? v => update({ timeLimit: v }) : null}
+                            />
+                        </section>
 
-                        <div className='flex flex-col gap-3'>
-                            {isHost ? (
-                                <button
-                                    type='button'
-                                    onClick={() => send({ type: 'start' })}
-                                    className='h-14 w-full rounded-xl bg-putt text-putt-ink font-extrabold text-left px-6 disabled:opacity-50 disabled:cursor-not-allowed'
-                                >
-                                    Start game
-                                </button>
-                            ) : (
-                                <p className='rounded-xl bg-card shadow-card px-6 py-4 font-bold'>
-                                    Waiting for {host?.name ?? 'the host'} to start…
-                                </p>
-                            )}
-                            <Button label='Leave party' onClick={leaveParty} />
-                        </div>
+                        {isHost ? (
+                            <button
+                                type='button'
+                                onClick={() => send({ type: 'start' })}
+                                className='min-h-19 rounded-3xl px-6 flex items-center justify-between gap-4 bg-putt text-putt-ink press-putt text-left transition-transform active:translate-y-1'
+                            >
+                                <span className='flex flex-col'>
+                                    <span className='font-black text-2xl'>Start game</span>
+                                    {course && <span className='font-bold opacity-80'>{course.name} · all {course.holes.length} holes</span>}
+                                </span>
+                                <Arrow />
+                            </button>
+                        ) : (
+                            <p className='rounded-2xl bg-white/8 px-6 py-4 font-extrabold'>
+                                Waiting for {host?.name ?? 'the host'} to start…
+                            </p>
+                        )}
                     </div>
 
-                    <div className='rounded-xl overflow-hidden shadow-card'>
-                        <canvas ref={canvasRef} className='block w-full h-[75vh] min-h-[420px] touch-none' />
+                    <div className='relative lg:sticky lg:top-6 h-[75vh] min-h-[420px] rounded-[32px] overflow-hidden border-12 border-card shadow-card'>
+                        <canvas ref={canvasRef} className='absolute inset-0 block w-full h-full touch-none' />
+                        <span className='absolute left-4 top-4 rounded-full bg-ground/75 px-4 py-2 font-black text-sm tracking-[0.15em] pointer-events-none'>PRACTICE GREEN</span>
+                        {me && (
+                            <div className='absolute left-4 bottom-4 right-4 flex flex-wrap items-center gap-3 pointer-events-none'>
+                                <button
+                                    type='button'
+                                    onClick={togglePlacing}
+                                    className={`${placing ? 'bg-ink text-card' : 'bg-card text-ink'} pointer-events-auto h-12 px-5 rounded-2xl shadow-chip font-black`}
+                                >
+                                    {placing ? 'Cancel' : `${placed ? 'Move' : 'Place'} your ${OBSTACLE_NAMES[me.obstacle].toLowerCase()}`}
+                                </button>
+                                {placing && <span className='rounded-full bg-ground/75 px-4 py-2 font-extrabold text-sm'>Click the green to drop it</span>}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

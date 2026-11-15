@@ -6,7 +6,12 @@ export interface Collider {
     bounce: number
     layer: number
 
+    low?: boolean
+
     closestPoint(px: number, py: number): [number, number]
+
+    active?(): boolean
+    setTime?(t: number): void
 
     update?(dt: number): void
     onHit?(ball: Ball, nx: number, ny: number): void

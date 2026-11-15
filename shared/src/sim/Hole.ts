@@ -7,6 +7,9 @@ import type { Transform } from './Transform'
 import { type Surface, surfaceAt } from './surfaces/Surface'
 import type { Shape, Bounds } from './shapes/Shape'
 import { evaluateMotion } from './motion'
+import type { Magnet } from './Magnet'
+import type { Faller } from './Faller'
+import type { Portal } from './Portal'
 
 export type Mover = { transform: Transform, path: MotionPath }
 
@@ -21,7 +24,11 @@ type HoleOptions = {
     surfaces: Surface[]
     bridges: Bridge[]
     movers: Mover[]
-    cup: Cup
+    magnets: Magnet[]
+    fallers: Faller[]
+    portals: Portal[]
+    cups: Cup[]
+    voidEdge: boolean
 }
 
 function fairwayBounds(fairways: Fairway[]): Bounds {
@@ -55,8 +62,13 @@ export class Hole {
     surfaces: Surface[]
     bridges: Bridge[]
     movers: Mover[]
+    magnets: Magnet[]
+    fallers: Faller[]
+    portals: Portal[]
+    voidEdge: boolean
 
     cup: Cup
+    cups: Cup[]
 
     bounds: Bounds
 
@@ -77,8 +89,13 @@ export class Hole {
         this.surfaces = o.surfaces
         this.bridges = o.bridges
         this.movers = o.movers
+        this.magnets = o.magnets
+        this.fallers = o.fallers
+        this.portals = o.portals
+        this.voidEdge = o.voidEdge
 
-        this.cup = o.cup
+        this.cups = o.cups
+        this.cup = o.cups[0]!
 
         this.collideBalls = false
 
@@ -93,6 +110,8 @@ export class Hole {
             const p = evaluateMotion(m.path, t)
             m.transform.set(p.x, p.y, p.angle, dt)
         }
+        for(const f of this.fallers) f.time = t
+        for(const w of this.walls) w.setTime?.(t)
     }
 
     update(dt: number): void {
@@ -100,8 +119,14 @@ export class Hole {
 
         for(const w of this.walls) w.update?.(dt)
         for(const s of this.surfaces) s.update(dt)
+        for(const f of this.fallers) f.step(dt, this.balls)
 
         for(const ball of this.balls){
+            if(inPlay(ball)){
+                for(const m of this.magnets) if(m.layer === ball.layer) m.pull(ball, dt)
+                for(const p of this.portals) if(p.layer === ball.layer) p.check(ball)
+            }
+
             for(const b of this.bridges) b.tryLift(ball)
 
             const layer = ball.layer === 1 ? 1 : 0
@@ -112,7 +137,11 @@ export class Hole {
                 ball.layer = 0
             }
 
-            if(ball.layer === 0) this.cup.update(dt, ball)
+            if(ball.layer === 0) for(const cup of this.cups) cup.update(dt, ball)
+
+            if(this.voidEdge && ball.layer === 0 && inPlay(ball) && !this.fairways.some(f => f.shape.contains(ball.x, ball.y))){
+                ball.driftAway()
+            }
         }
 
         if(this.collideBalls) this.collideAll()

@@ -50,7 +50,7 @@ export function Editor(){
     }
 
     return (
-        <div className='fixed inset-0 flex flex-col bg-sky font-sans text-ink'>
+        <div className='fixed inset-0 flex flex-col bg-line font-sans text-ink'>
             <header className='flex h-14 shrink-0 items-center gap-3 border-b border-ink/10 bg-card px-3'>
                 <SmallButton onClick={() => navigate('/')}>← Menu</SmallButton>
                 <span className='font-display text-xl font-bold'>Editor</span>

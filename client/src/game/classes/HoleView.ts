@@ -26,13 +26,15 @@ export class HoleView {
 
         this.hole.balls.forEach((ball, i) => {
             if(!wasHoled[i] && ball.holed() && !getPrefs().reduceMotion)
-                this.particles.push(...burst(ball.cosmetics.celebration, this.hole.cup.x, this.hole.cup.y))
+                this.particles.push(...burst(ball.cosmetics.celebration, ball.cupX, ball.cupY))
         })
 
         this.particles = stepParticles(this.particles, dt)
     }
 
     drawGround(ctx: CanvasRenderingContext2D, grass: CanvasPattern): void {
+        for(const ball of this.hole.balls) if(ball.drifting) drawBall(ctx, ball)
+
         for(const f of this.hole.fairways){
             const b = f.shape.bounds()
 
@@ -61,8 +63,8 @@ export class HoleView {
 
         for(const d of ground.ground) d.display(ctx)
         for(const d of ground.solid) d.display(ctx)
-        drawCup(ctx, this.hole.cup, this.cupColors)
-        for(const ball of this.hole.balls) if(ball.layer === 0) drawBall(ctx, ball)
+        for(const cup of this.hole.cups) drawCup(ctx, cup, this.cupColors)
+        for(const ball of this.hole.balls) if(ball.layer === 0 && !ball.drifting) drawBall(ctx, ball)
 
         for(const d of raised.ground) d.display(ctx)
         for(const d of raised.solid) d.display(ctx)
@@ -70,6 +72,6 @@ export class HoleView {
 
         drawParticles(ctx, this.particles)
 
-        drawFlag(ctx, this.hole.cup, focus ?? null)
+        for(const cup of this.hole.cups) drawFlag(ctx, cup, focus ?? null)
     }
 }

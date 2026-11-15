@@ -1,3 +1,4 @@
+import { drawBackdrop } from './art/backdrop'
 import { type Cosmetics, type CourseData, type Ball, clamp, lerp } from '@holey/shared'
 import { Camera } from './classes/Camera'
 import { type HoleView } from './classes/HoleView'
@@ -23,7 +24,7 @@ export type HoleResult = {
     isLast: boolean
 }
 
-export function startGame(canvas: HTMLCanvasElement, course: CourseData, events: GameEvents, cosmetics: Cosmetics, startHole: number = 0): {nextHole: () => void, setOverview: (on: boolean) => void, dispose: () => void} {
+export function startGame(canvas: HTMLCanvasElement, course: CourseData, events: GameEvents, cosmetics: Cosmetics, startHole: number = 0): {nextHole: () => void, replay: () => void, setOverview: (on: boolean) => void, dispose: () => void} {
     const ctx = canvas.getContext('2d')
 
     if(!ctx) throw new Error('2D canvas not supported')
@@ -126,6 +127,7 @@ export function startGame(canvas: HTMLCanvasElement, course: CourseData, events:
 
         ctx.fillStyle = theme.scenery
         ctx.fillRect(visArea.x, visArea.y, visArea.w, visArea.h)
+        drawBackdrop(ctx, theme, visArea, view.hole.time)
 
         view.drawGround(ctx, grass)
         view.draw(ctx, ball)
@@ -176,6 +178,7 @@ export function startGame(canvas: HTMLCanvasElement, course: CourseData, events:
 
     return {
         nextHole: () => loadHole(holeIndex + 1),
+        replay: () => loadHole(holeIndex),
         setOverview: (on: boolean) => { overview = on },
         dispose: () => {
             cancelAnimationFrame(frameId)

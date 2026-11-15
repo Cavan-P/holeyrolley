@@ -1,6 +1,15 @@
-import { COURSE_VERSION, type CourseData } from '../course'
+import { COURSE_VERSION, type CourseData, type CourseObject } from '../course'
+import { routeHole as H, setTier, type Route } from './kit'
 
-const PI = Math.PI
+setTier(0)
+
+const forest = (r: Route, ts: number[] = [0.15, 0.45, 0.75]): CourseObject[] =>
+    ts.flatMap((t, i) => [
+        r.decor(t, -1, 110 + (i % 2) * 40, i % 3 ? 'tree' : 'bush', undefined, 30),
+        r.decor(t + 0.1, 1, 120 + (i % 3) * 30, i % 2 ? 'bush' : 'tree', undefined, 40)
+    ])
+
+const trunk = (r: Route, t: number, side: number) => r.post(t, side, 16, { color: '#4a2e1c' })
 
 export const darkwoodMeadows: CourseData = {
     version: COURSE_VERSION,
@@ -8,290 +17,124 @@ export const darkwoodMeadows: CourseData = {
     theme: 'darkwood',
     assets: {},
     holes: [
-        {
-            name: 'First Steps',
-            par: 2,
-            tee: { x: 120, y: 620 },
-            cup: { x: 120, y: 130 },
-            objects: [
-                { id: 'h1-fairway', type: 'fairway', layer: 0, rails: true, shape: { type: 'rect', x: 0, y: 0, w: 240, h: 720, radius: 40 } }
-            ]
-        },
+        H({ name: 'First Steps', par: 2, path: [[0, 0], [0, -720]], width: 300 }, r => [
+            trunk(r, 0.5, 0.65),
+            ...forest(r)
+        ]),
 
-        {
-            name: 'The Bend',
-            par: 3,
-            tee: { x: 130, y: 760 },
-            cup: { x: 640, y: 130 },
-            objects: [
-                {
-                    id: 'h2-fairway', type: 'fairway', layer: 0, rails: true,
-                    shape: { type: 'polygon', points: [
-                        { x: 0, y: 140 }, { x: 140, y: 0 }, { x: 760, y: 0 }, { x: 760, y: 260 },
-                        { x: 260, y: 260 }, { x: 260, y: 860 }, { x: 0, y: 860 }
-                    ] }
-                }
-            ]
-        },
+        H({ name: 'Sand Trap', par: 3, path: [[0, 0], [0, -880]], width: 320 }, r => [
+            r.area('sand', r.circle(0.55, 0, 80)),
+            r.area('sand', r.circle(0.85, 0.7, 50)),
+            ...forest(r)
+        ]),
 
-        {
-            name: 'Pine Posts',
-            par: 3,
-            tee: { x: 140, y: 760 },
-            cup: { x: 140, y: 120 },
-            objects: [
-                { id: 'h3-fairway', type: 'fairway', layer: 0, rails: true, shape: { type: 'rect', x: 0, y: 0, w: 280, h: 860, radius: 40 } },
-                { id: 'h3-post-1', type: 'post', layer: 0, x: 90, y: 560, radius: 16, bounce: 0.8 },
-                { id: 'h3-post-2', type: 'post', layer: 0, x: 190, y: 560, radius: 16, bounce: 0.8 },
-                { id: 'h3-post-3', type: 'post', layer: 0, x: 140, y: 420, radius: 16, bounce: 0.8 },
-                { id: 'h3-post-4', type: 'post', layer: 0, x: 80, y: 290, radius: 16, bounce: 0.8 },
-                { id: 'h3-post-5', type: 'post', layer: 0, x: 200, y: 290, radius: 16, bounce: 0.8 }
-            ]
-        },
+        H({ name: 'The Bend', par: 3, path: [[0, 0], [0, -680], [620, -680]], width: 300 }, r => [
+            r.area('sand', r.circle(0.5, -1, 80)),
+            ...forest(r)
+        ]),
 
-        {
-            name: 'Sandy Lane',
-            par: 3,
-            tee: { x: 170, y: 880 },
-            cup: { x: 170, y: 140 },
-            objects: [
-                { id: 'h4-fairway', type: 'fairway', layer: 0, rails: true, shape: { type: 'rect', x: 0, y: 0, w: 340, h: 980, radius: 50 } },
-                { id: 'h4-bunker', type: 'sand', layer: 0, shape: { type: 'rect', x: 80, y: 300, w: 180, h: 120, radius: 40 } },
-                { id: 'h4-lip', type: 'sand', layer: 0, shape: { type: 'arc', x: 170, y: 140, inner: 30, outer: 62, start: -2.4, end: -0.7 } }
-            ]
-        },
+        H({ name: 'Pond Hop', par: 3, path: [[0, 0], [0, -900]], width: 380 }, r => [
+            r.area('water', r.circle(0.5, 0, 110)),
+            ...forest(r)
+        ]),
 
-        {
-            name: 'Fork in the Road',
-            par: 3,
-            tee: { x: 260, y: 880 },
-            cup: { x: 260, y: 140 },
-            objects: [
-                { id: 'h5-fairway', type: 'fairway', layer: 0, rails: true, shape: { type: 'rect', x: 0, y: 0, w: 520, h: 1000, radius: 50 } },
-                { id: 'h5-divider', type: 'wall', layer: 0, closed: false, thickness: 8, bounce: 0.6, points: [{ x: 260, y: 260 }, { x: 260, y: 760 }] },
-                { id: 'h5-sand', type: 'sand', layer: 0, shape: { type: 'rect', x: 30, y: 430, w: 140, h: 150, radius: 40 } },
-                { id: 'h5-post-1', type: 'post', layer: 0, x: 350, y: 600, radius: 16, bounce: 0.8 },
-                { id: 'h5-post-2', type: 'post', layer: 0, x: 440, y: 420, radius: 16, bounce: 0.8 }
-            ]
-        },
+        H({ name: 'Gentle Hill', par: 3, path: [[0, 0], [0, -520], [420, -880]], width: 300 }, r => [
+            r.slopeAt(0.45, 200, -140),
+            r.area('sand', r.circle(0.93, 0.8, 45)),
+            ...forest(r)
+        ]),
 
-        {
-            name: 'Gentle Hill',
-            par: 3,
-            tee: { x: 150, y: 940 },
-            cup: { x: 150, y: 150 },
-            objects: [
-                { id: 'h6-fairway', type: 'fairway', layer: 0, rails: true, shape: { type: 'rect', x: 0, y: 0, w: 300, h: 1040, radius: 40 } },
-                { id: 'h6-hill', type: 'slope', layer: 0, shape: { type: 'rect', x: 0, y: 380, w: 300, h: 220, radius: 0 }, push: { x: 0, y: 150 } }
-            ]
-        },
+        H({ name: 'Bumper Garden', par: 3, path: [[0, 0], [0, -560], [560, -860]], width: 380 }, r => [
+            r.bumper(0.35, -0.3, 20), r.bumper(0.5, 0.3, 18), r.bumper(0.68, -0.2, 20), r.bumper(0.62, 0.45, 16),
+            ...forest(r)
+        ]),
 
-        {
-            name: 'Meadow Bean',
-            par: 3,
-            tee: { x: 180, y: 820 },
-            cup: { x: 590, y: 200 },
-            objects: [
-                {
-                    id: 'h7-fairway', type: 'fairway', layer: 0, rails: true,
-                    shape: { type: 'curve', points: [
-                        { x: 120, y: 900 }, { x: 40, y: 700 }, { x: 60, y: 450 }, { x: 150, y: 220 }, { x: 330, y: 90 },
-                        { x: 560, y: 80 }, { x: 700, y: 180 }, { x: 680, y: 330 }, { x: 520, y: 330 }, { x: 380, y: 400 },
-                        { x: 300, y: 560 }, { x: 300, y: 760 }, { x: 260, y: 900 }
-                    ] }
-                },
-                { id: 'h7-bunker', type: 'sand', layer: 0, shape: { type: 'circle', x: 290, y: 300, r: 60 } }
-            ]
-        },
+        H({ name: 'Creek Crossing', par: 3, path: [[0, 0], [0, -980]], width: 340 }, r => [
+            r.area('water', r.band(0.5, 140)),
+            r.bridge(0.42, 0.58, 0.5, 90, true),
+            ...forest(r)
+        ]),
 
-        {
-            name: 'Bumper Garden',
-            par: 3,
-            tee: { x: 110, y: 700 },
-            cup: { x: 490, y: 110 },
-            objects: [
-                { id: 'h8-fairway', type: 'fairway', layer: 0, rails: true, shape: { type: 'rect', x: 0, y: 0, w: 600, h: 800, radius: 60 } },
-                { id: 'h8-bumper-1', type: 'bumper', layer: 0, a: { x: 300, y: 400 }, b: { x: 300, y: 400 }, radius: 22, kick: 220 },
-                { id: 'h8-bumper-2', type: 'bumper', layer: 0, a: { x: 190, y: 280 }, b: { x: 190, y: 280 }, radius: 18, kick: 220 },
-                { id: 'h8-bumper-3', type: 'bumper', layer: 0, a: { x: 410, y: 520 }, b: { x: 410, y: 520 }, radius: 18, kick: 220 },
-                { id: 'h8-bumper-4', type: 'bumper', layer: 0, a: { x: 420, y: 250 }, b: { x: 420, y: 250 }, radius: 16, kick: 220 },
-                { id: 'h8-bumper-5', type: 'bumper', layer: 0, a: { x: 180, y: 540 }, b: { x: 180, y: 540 }, radius: 16, kick: 220 }
-            ]
-        },
+        H({ name: 'Pine Posts', par: 3, path: [[0, 0], [0, -450], [500, -800], [500, -1100]], width: 300 }, r => [
+            trunk(r, 0.25, -0.4), trunk(r, 0.35, 0.4), trunk(r, 0.5, 0),
+            trunk(r, 0.65, -0.4), trunk(r, 0.75, 0.4),
+            ...forest(r)
+        ]),
 
-        {
-            name: 'Lily Pond',
-            par: 3,
-            tee: { x: 260, y: 900 },
-            cup: { x: 260, y: 130 },
-            objects: [
-                { id: 'h9-fairway', type: 'fairway', layer: 0, rails: true, shape: { type: 'rect', x: 0, y: 0, w: 520, h: 1000, radius: 60 } },
-                {
-                    id: 'h9-pond', type: 'water', layer: 0,
-                    shape: { type: 'curve', points: [
-                        { x: 110, y: 500 }, { x: 160, y: 390 }, { x: 260, y: 370 }, { x: 370, y: 400 },
-                        { x: 410, y: 500 }, { x: 360, y: 610 }, { x: 260, y: 630 }, { x: 150, y: 600 }
-                    ] }
-                }
-            ]
-        },
+        H({ name: 'Dogleg Left', par: 4, path: [[0, 0], [0, -800], [-660, -1060]], width: 300 }, r => [
+            r.area('sand', r.circle(0.58, 1, 90)),
+            trunk(r, 0.62, -0.5),
+            ...forest(r)
+        ]),
 
-        {
-            name: 'Creek Crossing',
-            par: 3,
-            tee: { x: 250, y: 1000 },
-            cup: { x: 250, y: 140 },
-            objects: [
-                { id: 'h10-fairway', type: 'fairway', layer: 0, rails: true, shape: { type: 'rect', x: 0, y: 0, w: 340, h: 1100, radius: 40 } },
-                { id: 'h10-creek', type: 'water', layer: 0, shape: { type: 'rect', x: 0, y: 460, w: 340, h: 150, radius: 0 } },
-                { id: 'h10-bridge', type: 'bridge', layer: 1, a: { x: 100, y: 670 }, b: { x: 100, y: 400 }, width: 90, rails: true }
-            ]
-        },
+        H({ name: 'Sliding Gate', par: 3, path: [[0, 0], [0, -1000]], width: 320 }, r => [
+            r.across(0.5, -1.1, -0.3, 9),
+            r.across(0.5, 0.3, 1.1, 9),
+            r.across(0.5, -0.3, 0.05, 9, {}, r.slide(0.5, 110, 2.4)),
+            ...forest(r)
+        ]),
 
-        {
-            name: 'Fern Loop',
-            par: 3,
-            tee: { x: 420, y: 770 },
-            cup: { x: 420, y: 70 },
-            objects: [
-                { id: 'h11-fairway', type: 'fairway', layer: 0, rails: true, shape: { type: 'donut', x: 420, y: 420, inner: 160, outer: 380 } },
-                { id: 'h11-sand', type: 'sand', layer: 0, shape: { type: 'arc', x: 420, y: 420, inner: 180, outer: 360, start: PI * 0.88, end: PI * 1.12 } },
-                { id: 'h11-post-1', type: 'post', layer: 0, x: 690, y: 420, radius: 16, bounce: 0.8 },
-                { id: 'h11-post-2', type: 'post', layer: 0, x: 640, y: 250, radius: 16, bounce: 0.8 }
-            ]
-        },
+        H({ name: 'Old Windmill', par: 4, path: [[0, 0], [0, -720], [460, -1120]], width: 340 }, r => [
+            r.across(0.38, -1.2, -0.42, 9),
+            r.across(0.38, 0.42, 1.2, 9),
+            r.spinner(0.48, 0, 130, 4.5),
+            r.post(0.48, 0, 10, { color: '#4a2e1c' }),
+            ...forest(r)
+        ]),
 
-        {
-            name: 'Hillside',
-            par: 3,
-            tee: { x: 210, y: 960 },
-            cup: { x: 110, y: 140 },
-            objects: [
-                { id: 'h12-fairway', type: 'fairway', layer: 0, rails: true, shape: { type: 'rect', x: 0, y: 0, w: 420, h: 1040, radius: 40 } },
-                { id: 'h12-slope', type: 'slope', layer: 0, shape: { type: 'rect', x: 0, y: 300, w: 300, h: 420, radius: 0 }, push: { x: 140, y: 0 } },
-                { id: 'h12-sand', type: 'sand', layer: 0, shape: { type: 'rect', x: 300, y: 300, w: 120, h: 420, radius: 0 } }
-            ]
-        },
+        H({ name: 'Hairpin', par: 4, path: [[0, 0], [0, -880], [660, -880], [660, -160]], width: 300, smooth: true }, r => [
+            r.area('sand', r.circle(0.4, -1, 80)),
+            r.area('water', r.circle(0.5, 0.95, 60)),
+            ...forest(r, [0.2, 0.8])
+        ]),
 
-        {
-            name: 'Sliding Gate',
-            par: 3,
-            tee: { x: 160, y: 900 },
-            cup: { x: 160, y: 150 },
-            objects: [
-                { id: 'h13-fairway', type: 'fairway', layer: 0, rails: true, shape: { type: 'rect', x: 0, y: 0, w: 320, h: 1000, radius: 40 } },
-                { id: 'h13-wall-left', type: 'wall', layer: 0, closed: false, thickness: 8, bounce: 0.6, points: [{ x: 0, y: 500 }, { x: 100, y: 500 }] },
-                { id: 'h13-wall-right', type: 'wall', layer: 0, closed: false, thickness: 8, bounce: 0.6, points: [{ x: 220, y: 500 }, { x: 320, y: 500 }] },
-                {
-                    id: 'h13-gate', type: 'wall', layer: 0, closed: false, thickness: 8, bounce: 0.6,
-                    points: [{ x: 100, y: 500 }, { x: 160, y: 500 }],
-                    motion: {
-                        mode: 'pingpong',
-                        pivot: { x: 130, y: 500 },
-                        keys: [
-                            { t: 0, x: 0, y: 0, angle: 0, ease: 'smooth' },
-                            { t: 2.4, x: 60, y: 0, angle: 0, ease: 'smooth' }
-                        ]
-                    }
-                }
+        H({ name: 'Island Green', par: 4, path: [[0, 0], [0, -820], [560, -1080]], width: 440 }, r => {
+            const c = r.p(0.96)
+            return [
+                { id: 'island-moat', type: 'water', layer: 0, shape: { type: 'donut', x: c.x, y: c.y, inner: 100, outer: 200 } },
+                r.bridge(0.78, 0.92, 0, 80, true),
+                ...forest(r)
             ]
-        },
+        }),
 
-        {
-            name: 'Old Windmill',
-            par: 3,
-            tee: { x: 180, y: 900 },
-            cup: { x: 180, y: 150 },
-            objects: [
-                { id: 'h14-fairway', type: 'fairway', layer: 0, rails: true, shape: { type: 'rect', x: 0, y: 0, w: 360, h: 1000, radius: 40 } },
-                { id: 'h14-funnel-left', type: 'wall', layer: 0, closed: false, thickness: 8, bounce: 0.6, points: [{ x: 0, y: 560 }, { x: 130, y: 480 }] },
-                { id: 'h14-funnel-right', type: 'wall', layer: 0, closed: false, thickness: 8, bounce: 0.6, points: [{ x: 360, y: 560 }, { x: 230, y: 480 }] },
-                {
-                    id: 'h14-blades', type: 'wall', layer: 0, closed: false, thickness: 7, bounce: 0.7,
-                    points: [{ x: 110, y: 400 }, { x: 250, y: 400 }],
-                    motion: {
-                        mode: 'loop',
-                        pivot: { x: 180, y: 400 },
-                        keys: [
-                            { t: 0, x: 0, y: 0, angle: 0, ease: 'linear' },
-                            { t: 4, x: 0, y: 0, angle: PI * 2, ease: 'linear' }
-                        ]
-                    }
-                },
-                { id: 'h14-hub', type: 'post', layer: 0, x: 180, y: 400, radius: 10, bounce: 0.6 }
-            ]
-        },
+        H({ name: 'Hillside', par: 4, path: [[0, 0], [0, -560], [780, -860], [780, -1380]], width: 340, smooth: true }, r => [
+            r.slope(r.strip(0.35, 0.65, -1.2, 1.2), 0, 130),
+            r.area('sand', r.strip(0.38, 0.62, 0.65, 1.2)),
+            ...forest(r)
+        ]),
 
-        {
-            name: 'Island Green',
-            par: 3,
-            tee: { x: 150, y: 820 },
-            cup: { x: 430, y: 320 },
-            objects: [
-                { id: 'h15-fairway', type: 'fairway', layer: 0, rails: true, shape: { type: 'rect', x: 0, y: 0, w: 760, h: 900, radius: 60 } },
-                { id: 'h15-moat', type: 'water', layer: 0, shape: { type: 'donut', x: 380, y: 360, inner: 140, outer: 290 } },
-                { id: 'h15-bridge', type: 'bridge', layer: 1, a: { x: 380, y: 690 }, b: { x: 380, y: 460 }, width: 90, rails: true },
-                { id: 'h15-backstop', type: 'arcWall', layer: 0, x: 380, y: 360, radius: 125, start: PI * 1.15, end: PI * 1.85, thickness: 6, bounce: 0.5 }
-            ]
-        },
+        H({ name: 'Fork in the Road', par: 4, path: [[0, 0], [0, -700], [600, -1150]], width: 520 }, r => [
+            r.lengthwise(0.12, 0.6, 0, 9),
+            r.area('sand', r.strip(0.25, 0.45, -1, -0.15)),
+            trunk(r, 0.3, 0.55), trunk(r, 0.42, 0.4),
+            r.area('water', r.circle(0.82, 0.55, 60)),
+            ...forest(r)
+        ]),
 
-        {
-            name: 'Pinball Glade',
-            par: 3,
-            tee: { x: 280, y: 880 },
-            cup: { x: 280, y: 120 },
-            objects: [
-                { id: 'h16-fairway', type: 'fairway', layer: 0, rails: true, shape: { type: 'rect', x: 0, y: 0, w: 560, h: 960, radius: 60 } },
-                { id: 'h16-flipper-left', type: 'bumper', layer: 0, a: { x: 120, y: 620 }, b: { x: 200, y: 560 }, radius: 10, kick: 180 },
-                { id: 'h16-flipper-right', type: 'bumper', layer: 0, a: { x: 440, y: 620 }, b: { x: 360, y: 560 }, radius: 10, kick: 180 },
-                { id: 'h16-bumper-1', type: 'bumper', layer: 0, a: { x: 280, y: 420 }, b: { x: 280, y: 420 }, radius: 22, kick: 220 },
-                { id: 'h16-bumper-2', type: 'bumper', layer: 0, a: { x: 170, y: 330 }, b: { x: 170, y: 330 }, radius: 18, kick: 220 },
-                { id: 'h16-bumper-3', type: 'bumper', layer: 0, a: { x: 390, y: 330 }, b: { x: 390, y: 330 }, radius: 18, kick: 220 },
-                { id: 'h16-guard', type: 'arcWall', layer: 0, x: 280, y: 120, radius: 60, start: PI / 2 + 0.7, end: PI / 2 - 0.7, thickness: 6, bounce: 0.5 }
-            ]
-        },
+        H({ name: 'Pinball Glade', par: 4, path: [[0, 0], [0, -600], [760, -1000], [760, -1560]], width: 400 }, r => [
+            r.bumper(0.3, -0.4, 18), r.bumper(0.35, 0.4, 22), r.bumper(0.5, 0, 22),
+            r.bumper(0.62, -0.45, 18), r.bumper(0.7, 0.45, 18),
+            { id: 'flipper-l', type: 'bumper', layer: 0, a: r.p(0.83, -0.75), b: r.p(0.87, -0.35), radius: 10, kick: 180 },
+            { id: 'flipper-r', type: 'bumper', layer: 0, a: r.p(0.83, 0.75), b: r.p(0.87, 0.35), radius: 10, kick: 180 },
+            ...forest(r)
+        ]),
 
-        {
-            name: 'Switchback Trail',
-            par: 4,
-            tee: { x: 110, y: 880 },
-            cup: { x: 600, y: 140 },
-            objects: [
-                { id: 'h17-fairway', type: 'fairway', layer: 0, rails: true, shape: { type: 'rect', x: 0, y: 0, w: 720, h: 1000, radius: 50 } },
-                { id: 'h17-divider-low', type: 'wall', layer: 0, closed: false, thickness: 8, bounce: 0.6, points: [{ x: 0, y: 680 }, { x: 520, y: 680 }] },
-                { id: 'h17-divider-high', type: 'wall', layer: 0, closed: false, thickness: 8, bounce: 0.6, points: [{ x: 720, y: 360 }, { x: 200, y: 360 }] },
-                { id: 'h17-pond', type: 'water', layer: 0, shape: { type: 'circle', x: 360, y: 520, r: 70 } },
-                { id: 'h17-sand', type: 'sand', layer: 0, shape: { type: 'rect', x: 400, y: 90, w: 90, h: 140, radius: 35 } }
-            ]
-        },
+        H({ name: 'Switchback Trail', par: 5, path: [[0, 0], [820, 0], [820, -520], [0, -520], [0, -1040], [820, -1040]], width: 300 }, r => [
+            r.area('water', r.circle(0.3, 0, 60)),
+            r.area('sand', r.circle(0.5, 0.4, 70)),
+            r.spinner(0.69, 0, 85, 5),
+            ...forest(r, [0.1, 0.5, 0.9])
+        ]),
 
-        {
-            name: 'Darkwood Finale',
-            par: 4,
-            tee: { x: 210, y: 1400 },
-            cup: { x: 210, y: 140 },
-            objects: [
-                { id: 'h18-fairway', type: 'fairway', layer: 0, rails: true, shape: { type: 'rect', x: 0, y: 0, w: 420, h: 1500, radius: 50 } },
-                { id: 'h18-creek', type: 'water', layer: 0, shape: { type: 'rect', x: 0, y: 1000, w: 420, h: 120, radius: 0 } },
-                { id: 'h18-bridge', type: 'bridge', layer: 1, a: { x: 320, y: 1180 }, b: { x: 320, y: 940 }, width: 90, rails: true },
-                { id: 'h18-funnel-left', type: 'wall', layer: 0, closed: false, thickness: 8, bounce: 0.6, points: [{ x: 0, y: 780 }, { x: 140, y: 720 }] },
-                { id: 'h18-funnel-right', type: 'wall', layer: 0, closed: false, thickness: 8, bounce: 0.6, points: [{ x: 420, y: 780 }, { x: 280, y: 720 }] },
-                {
-                    id: 'h18-blades', type: 'wall', layer: 0, closed: false, thickness: 7, bounce: 0.7,
-                    points: [{ x: 140, y: 640 }, { x: 280, y: 640 }],
-                    motion: {
-                        mode: 'loop',
-                        pivot: { x: 210, y: 640 },
-                        keys: [
-                            { t: 0, x: 0, y: 0, angle: 0, ease: 'linear' },
-                            { t: 4, x: 0, y: 0, angle: PI * 2, ease: 'linear' }
-                        ]
-                    }
-                },
-                { id: 'h18-hub', type: 'post', layer: 0, x: 210, y: 640, radius: 10, bounce: 0.6 },
-                { id: 'h18-hill', type: 'slope', layer: 0, shape: { type: 'rect', x: 0, y: 260, w: 420, h: 200, radius: 0 }, push: { x: 0, y: 140 } },
-                { id: 'h18-backstop', type: 'arcWall', layer: 0, x: 210, y: 140, radius: 70, start: PI * 1.15, end: PI * 1.85, thickness: 6, bounce: 0.5 }
-            ]
-        }
+        H({ name: 'Darkwood Finale', par: 5, path: [[0, 0], [0, -800], [700, -1200], [700, -2000], [200, -2400]], width: 340, smooth: true }, r => [
+            r.slopeAt(0.18, 200, -140),
+            r.area('water', r.band(0.4, 140)),
+            r.bridge(0.35, 0.45, 0.4, 85, true),
+            r.across(0.62, -1.2, -0.42, 9),
+            r.across(0.62, 0.42, 1.2, 9),
+            r.spinner(0.7, 0, 115, 4.5),
+            r.area('sand', r.circle(0.85, 0.8, 70)),
+            ...forest(r, [0.1, 0.3, 0.5, 0.7, 0.9])
+        ])
     ]
 }

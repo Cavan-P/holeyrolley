@@ -2,18 +2,31 @@ type ButtonProps = {
     label: string
     onClick: () => void
     splash?: boolean
+    ghost?: boolean
     arrow?: boolean
+    disabled?: boolean
 }
 
-export function Button({ label, onClick, splash = false, arrow = false }: ButtonProps){
-    const defaultClass = splash ? 'bg-putt font-extrabold' : 'bg-card'
+export function Button({ label, onClick, splash = false, ghost = false, arrow = false, disabled = false }: ButtonProps){
+    const tone = splash ? 'bg-putt text-putt-ink press-putt' : ghost ? 'bg-white/8 text-chalk press-ghost' : 'bg-card text-ink press-card'
 
     return (
-        <button type='button' onClick={onClick} className={`${defaultClass} h-14 w-full rounded-xl text-left items-center pl-6 justify-between flex flex-row`}>
+        <button
+            type='button'
+            onClick={onClick}
+            disabled={disabled}
+            className={`${tone} h-16 w-full rounded-2xl px-6 flex items-center justify-between gap-4 font-black text-lg text-left transition-transform active:translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed`}
+        >
             {label}
-            <div className='pr-6'>
-                <span className={arrow ? 'w-3 h-3 border-black border-t-0 border-r-3 border-b-3 border-l-0 inline-block -rotate-45' : ''}></span>
-            </div>
+            {arrow && <Arrow />}
         </button>
+    )
+}
+
+export function Arrow(){
+    return (
+        <svg aria-hidden='true' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.5' strokeLinecap='round' strokeLinejoin='round' className='shrink-0'>
+            <path d='M5 12h14M13 6l6 6-6 6' />
+        </svg>
     )
 }

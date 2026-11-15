@@ -1,4 +1,4 @@
-import { BALL_COLORS, CELEBRATIONS, HATS, maxNameLength, type ClientMsg, type Cosmetics } from '@holey/shared'
+import { BALL_COLORS, CELEBRATIONS, COURSES, HATS, STROKE_LIMITS, TIME_LIMITS, maxNameLength, type ClientMsg, type Cosmetics } from '@holey/shared'
 
 export function isObject(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null
@@ -69,17 +69,30 @@ export function parseClientMsg(value: unknown): ClientMsg | null {
         case 'update': {
             if(!isObject(value.settings)) return null
             if(typeof value.settings.collision !== 'boolean') return null
+            if(typeof value.settings.course !== 'string' || !Object.hasOwn(COURSES, value.settings.course)) return null
+            const { strokeLimit, timeLimit } = value.settings
+            if(!STROKE_LIMITS.some(l => l === strokeLimit)) return null
+            if(!TIME_LIMITS.some(l => l === timeLimit)) return null
 
             return {
                 type: 'update',
                 settings: {
-                    collision: value.settings.collision
+                    collision: value.settings.collision,
+                    course: value.settings.course,
+                    strokeLimit: strokeLimit as number | null,
+                    timeLimit: timeLimit as number | null
                 }
             }
         }
 
         case 'leave': {
             return { type: 'leave' }
+        }
+        case 'place': {
+            if(typeof value.x !== 'number' || !Number.isFinite(value.x)) return null
+            if(typeof value.y !== 'number' || !Number.isFinite(value.y)) return null
+
+            return { type: 'place', x: value.x, y: value.y }
         }
         case 'shoot': {
             if(typeof value.angle !== 'number' || !Number.isFinite(value.angle)) return null

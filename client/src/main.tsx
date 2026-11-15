@@ -1,8 +1,6 @@
 
 import { initSound } from './audio/music'
-import { initTheme } from './settings/theme'
 initSound()
-initTheme()
 
 
 import './style.css'

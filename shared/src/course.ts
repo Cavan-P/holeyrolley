@@ -13,10 +13,23 @@ export type ShapeData =
 
 export type ShapeType = ShapeData['type']
 
+export const SKINS = [
+    'rock', 'shell', 'starfish', 'crab', 'ocean', 'palm', 'umbrella', 'towel',
+    'asteroid', 'ufo', 'pulsar', 'zerog', 'meteor', 'planet', 'satellite', 'rocket',
+    'basalt', 'geyser', 'lavarock', 'volcano', 'vent',
+    'iceblock', 'pine', 'snowman', 'igloo',
+    'neon', 'cabinet', 'slime', 'coin',
+    'ghost', 'fence', 'tombstone', 'deadtree', 'pumpkin',
+    'candycane', 'gumball', 'lollipop', 'cupcake', 'gumdrop',
+    'gear', 'girder', 'pipe', 'barrel', 'tree', 'bush'
+] as const
+export type Skin = typeof SKINS[number]
+
 export type Style = {
     color?: string
     image?: string
     opacity?: number
+    skin?: Skin
 }
 
 export type Keyframe = {
@@ -43,18 +56,29 @@ type Base = {
 }
 
 export type FairwayObject = Base & { type: 'fairway', shape: ShapeData, rails: boolean }
-export type AreaObject = Base & { type: 'sand' | 'ice' | 'water', shape: ShapeData }
+export type AreaObject = Base & { type: 'sand' | 'ice' | 'water' | 'lava', shape: ShapeData }
 export type SlopeObject = Base & { type: 'slope', shape: ShapeData, push: Vec }
 
-export type WallObject = Base & { type: 'wall', points: Vec[], closed: boolean, thickness: number, bounce: number }
+export type Phase = { on: number, off: number, offset: number }
 
-export type CurveWallObject = Base & { type: 'curveWall', points: Vec[], closed: boolean, thickness: number, bounce: number }
-export type ArcWallObject = Base & { type: 'arcWall', x: number, y: number, radius: number, start: number, end: number, thickness: number, bounce: number }
+type Solid = { low?: boolean, hits?: number, phase?: Phase }
 
-export type BumperObject = Base & { type: 'bumper', a: Vec, b: Vec, radius: number, kick: number }
-export type PostObject = Base & { type: 'post', x: number, y: number, radius: number, bounce: number }
+export type WallObject = Base & Solid & { type: 'wall', points: Vec[], closed: boolean, thickness: number, bounce: number }
+
+export type CurveWallObject = Base & Solid & { type: 'curveWall', points: Vec[], closed: boolean, thickness: number, bounce: number }
+export type ArcWallObject = Base & Solid & { type: 'arcWall', x: number, y: number, radius: number, start: number, end: number, thickness: number, bounce: number }
+
+export type BumperObject = Base & Solid & { type: 'bumper', a: Vec, b: Vec, radius: number, kick: number }
+export type PostObject = Base & Solid & { type: 'post', x: number, y: number, radius: number, bounce: number }
 
 export type BridgeObject = Base & { type: 'bridge', a: Vec, b: Vec, width: number, rails: boolean }
+
+export type SpringObject = Base & { type: 'spring', shape: ShapeData, power: number }
+export type ConveyorObject = Base & { type: 'conveyor', shape: ShapeData, push: Vec }
+export type PortalObject = Base & { type: 'portal', a: Vec, b: Vec, radius: number }
+
+export type MagnetObject = Base & { type: 'magnet', x: number, y: number, radius: number, strength: number }
+export type FallerObject = Base & { type: 'faller', shape: ShapeData, every: number, size: number }
 
 export type DecorObject = Base & { type: 'decor', x: number, y: number, w: number, h: number, rotation: number }
 
@@ -68,6 +92,11 @@ export type CourseObject =
     | BumperObject
     | PostObject
     | BridgeObject
+    | MagnetObject
+    | SpringObject
+    | ConveyorObject
+    | PortalObject
+    | FallerObject
     | DecorObject
 
 export type ObjectType = CourseObject['type']
@@ -77,6 +106,8 @@ export type HoleData = {
     par: number
     tee: Vec
     cup: Vec
+    extraCups?: Vec[]
+    voidEdge?: boolean
     
     objects: CourseObject[]
 }

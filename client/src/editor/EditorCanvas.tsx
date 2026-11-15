@@ -560,6 +560,10 @@ function outlineObject(ctx: CanvasRenderingContext2D, o: CourseObject, color: st
         case 'sand':
         case 'ice':
         case 'water':
+        case 'lava':
+        case 'faller':
+        case 'spring':
+        case 'conveyor':
         case 'slope':
             for(const loop of buildShape(o.shape).outline()) strokePoints(ctx, loop, true)
             break
@@ -576,6 +580,14 @@ function outlineObject(ctx: CanvasRenderingContext2D, o: CourseObject, color: st
             break
         case 'post':
             ctx.arc(o.x, o.y, o.radius + 3, 0, Math.PI * 2)
+            break
+        case 'magnet':
+            ctx.arc(o.x, o.y, o.radius, 0, Math.PI * 2)
+            break
+        case 'portal':
+            ctx.arc(o.a.x, o.a.y, o.radius + 3, 0, Math.PI * 2)
+            ctx.moveTo(o.b.x + o.radius + 3, o.b.y)
+            ctx.arc(o.b.x, o.b.y, o.radius + 3, 0, Math.PI * 2)
             break
         case 'bridge':
             for(const loop of new Bridge(o.a.x, o.a.y, o.b.x, o.b.y, o.width, false).shape.outline()) strokePoints(ctx, loop, true)

@@ -3,7 +3,7 @@ import { WebSocketServer } from 'ws'
 import { makeMember, send, sendRoom, sendState } from './utilities'
 import { type Member, type Room } from './types'
 import { parseClientMsg } from './validate'
-import { darkwoodMeadows, practiceGreen, buildHole, maxPlayers, Ball, type HoleData } from '@holey/shared'
+import { COURSES, DEFAULT_COURSE, practiceGreenWith, canPlace, buildHole, maxPlayers, Ball, type HoleData } from '@holey/shared'
 
 const wss = new WebSocketServer({ port: 3001 })
 
@@ -33,6 +33,36 @@ function addBall(room: Room, member: Member): void {
 
     room.hole.balls.push(ball)
     room.balls.set(member.player.id, ball)
+}
+
+function rebuildGreen(room: Room): void {
+    if(room.phase !== 'lobby' || !room.hole) return
+
+    const data = practiceGreenWith([...room.pieces.values()])
+    const hole = buildHole(data, null).hole
+
+    hole.balls = room.hole.balls
+    hole.collideBalls = room.hole.collideBalls
+    room.hole = hole
+    room.holeData = data
+}
+
+const RESPAWN_DELAY = 1.2
+
+function respawnHoled(room: Room): void {
+    const hole = room.hole
+    if(room.phase !== 'lobby' || !hole || !room.holeData) return
+
+    for(const [id, ball] of room.balls){
+        if(!ball.holed() || ball.holedTime < RESPAWN_DELAY) continue
+
+        const angle = Math.random() * Math.PI * 2
+        const dist = 20 + Math.random() * 25
+        const fresh = new Ball(room.holeData.tee.x + Math.cos(angle) * dist, room.holeData.tee.y + Math.sin(angle) * dist, ball.cosmetics)
+
+        room.balls.set(id, fresh)
+        hole.balls = hole.balls.map(b => b === ball ? fresh : b)
+    }
 }
 
 function setHole(room: Room, data: HoleData): void {
@@ -65,6 +95,7 @@ wss.on('connection', socket => {
         if(room.hole) {
             room.hole.balls = room.hole.balls.filter(b => b !== myBall)
         }
+        if(room.pieces.delete(myId)) rebuildGreen(room)
 
         if(!room.players.size){
             rooms.delete(room.code)
@@ -103,7 +134,10 @@ wss.on('connection', socket => {
                 const room: Room = {
                     code: makeCode(),
                     settings: {
-                        collision: false
+                        collision: false,
+                        course: DEFAULT_COURSE,
+                        strokeLimit: null,
+                        timeLimit: null
                     },
                     hostId: member.player.id,
                     players: new Map([[member.player.id, member]]),
@@ -111,10 +145,11 @@ wss.on('connection', socket => {
                     hole: null,
                     holeData: null,
                     holeIndex: 0,
-                    balls: new Map()
+                    balls: new Map(),
+                    pieces: new Map()
                 }
 
-                setHole(room, practiceGreen)
+                setHole(room, practiceGreenWith([]))
 
                 rooms.set(room.code, room)
 
@@ -165,9 +200,7 @@ wss.on('connection', socket => {
 
                 if(mine.member.player.id !== mine.room.hostId) break
 
-                mine.room.settings = {
-                    collision: msg.settings.collision
-                }
+                mine.room.settings = msg.settings
 
                 if(mine.room.hole) mine.room.hole.collideBalls = msg.settings.collision
 
@@ -184,7 +217,7 @@ wss.on('connection', socket => {
                 if(mine.room.phase !== 'lobby') break
 
 
-                const holeData = darkwoodMeadows.holes[mine.room.holeIndex]
+                const holeData = COURSES[mine.room.settings.course]?.holes[mine.room.holeIndex]
                 if(!holeData) break
 
                 const room = mine.room
@@ -211,6 +244,22 @@ wss.on('connection', socket => {
 
             break }
 
+
+            //Drop or move your obstacle on the practice green
+            case 'place': {
+                if(!mine) break
+
+                const room = mine.room
+                if(room.phase !== 'lobby') break
+                if(!canPlace(msg.x, msg.y)) break
+
+                const player = mine.member.player
+                room.pieces.set(player.id, { owner: player.id, kind: player.obstacle, x: msg.x, y: msg.y })
+                rebuildGreen(room)
+
+                sendRoom(room)
+
+            break }
 
             //Leave room, disconnect, whatever
             case 'leave': { 
@@ -243,6 +292,8 @@ setInterval(() => {
         }
         acc -= STEP
     }
+
+    for(const room of rooms.values()) respawnHoled(room)
 }, 1000 / 60)
 
 setInterval(() => {

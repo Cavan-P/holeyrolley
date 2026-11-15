@@ -1,4 +1,4 @@
-import { darkwoodMeadows, practiceGreen, Ball, clamp, lerp } from '@holey/shared'
+import { darkwoodMeadows, practiceGreenWith, canPlace, Ball, clamp, lerp, type GreenPiece } from '@holey/shared'
 import { Camera } from './classes/Camera'
 import { createGrassPattern } from './art/grass'
 import { getTheme } from './art/themes'
@@ -10,7 +10,7 @@ import { getPrefs } from '../settings/store'
 
 const INTERP_DELAY = 100
 
-export function startLobby(canvas: HTMLCanvasElement): { dispose: () => void } {
+export function startLobby(canvas: HTMLCanvasElement, onPlaced: () => void): { dispose: () => void, setPlacing: (on: boolean) => void } {
     const ctx = canvas.getContext('2d')
 
     if(!ctx) throw new Error('2D canvas not supported')
@@ -18,10 +18,14 @@ export function startLobby(canvas: HTMLCanvasElement): { dispose: () => void } {
     let frameId = 0
     const balls = new Map<string, Ball>()
     const names = new Map<string, string>()
+    const hidden = new Map<string, boolean>()
     let myMoving = false
+    let placing = false
+    const mouse = { x: 0, y: 0 }
 
     const theme = getTheme(darkwoodMeadows.theme)
-    const view = buildHole(practiceGreen, darkwoodMeadows, null)
+    let pieces: GreenPiece[] | undefined = getSnapshot().room?.pieces
+    let view = buildHole(practiceGreenWith(pieces ?? []), darkwoodMeadows, null)
     const grass = createGrassPattern(ctx, theme.turf, theme.turfStripe)
 
     const b = view.hole.bounds
@@ -37,11 +41,37 @@ export function startLobby(canvas: HTMLCanvasElement): { dispose: () => void } {
         canvas,
         camera,
         origin: () => myBall() ?? { x: 0, y: 0 },
-        canAim: () => myBall() !== undefined && !myMoving,
+        canAim: () => myBall() !== undefined && !myMoving && !placing,
         onShoot: ({ dx, dy, power }) => send({ type: 'shoot', angle: Math.atan2(dy, dx), power })
     })
 
+    const toCanvas = (e: PointerEvent) => {
+        const rect = canvas.getBoundingClientRect()
+        mouse.x = e.clientX - rect.left
+        mouse.y = e.clientY - rect.top
+    }
+    const onMove = (e: PointerEvent) => toCanvas(e)
+    const onUp = (e: PointerEvent) => {
+        if(!placing) return
+        toCanvas(e)
+
+        const p = camera.mouse(mouse)
+        if(!canPlace(p.x, p.y)) return
+
+        send({ type: 'place', x: p.x, y: p.y })
+        placing = false
+        onPlaced()
+    }
+    canvas.addEventListener('pointermove', onMove)
+    canvas.addEventListener('pointerup', onUp)
+
     const frame = () => {
+        const roomPieces = getSnapshot().room?.pieces
+        if(roomPieces && roomPieces !== pieces){
+            pieces = roomPieces
+            view = buildHole(practiceGreenWith(pieces), darkwoodMeadows, null)
+        }
+
         const states = getStates()
         const latest = states.at(-1)
         if(latest){
@@ -62,8 +92,10 @@ export function startLobby(canvas: HTMLCanvasElement): { dispose: () => void } {
                 }
                 const a = from.msg.balls.find(p => p.id === s.id)
                 const z = to.msg.balls.find(p => p.id === s.id)
-                ball.x = a && z ? lerp(a.x, z.x, t) : s.x
-                ball.y = a && z ? lerp(a.y, z.y, t) : s.y
+                const smooth = a && z && !a.holed && !z.holed
+                ball.x = smooth ? lerp(a.x, z.x, t) : (z ?? s).x
+                ball.y = smooth ? lerp(a.y, z.y, t) : (z ?? s).y
+                hidden.set(s.id, z?.holed ?? s.holed)
                 ball.layer = s.layer
 
                 if(s.id === myId) myMoving = s.moving
@@ -73,10 +105,11 @@ export function startLobby(canvas: HTMLCanvasElement): { dispose: () => void } {
                 if(!state.balls.some(b => b.id === id)){
                     balls.delete(id)
                     names.delete(id)
+                    hidden.delete(id)
                 }
             }
 
-            view.hole.balls = [...balls.values()]
+            view.hole.balls = [...balls].filter(([id]) => !hidden.get(id)).map(([, b]) => b)
         }
 
         ctx.fillStyle = theme.scenery
@@ -89,8 +122,19 @@ export function startLobby(canvas: HTMLCanvasElement): { dispose: () => void } {
         if(getPrefs().nameTags){
             for(const [id, ball] of balls){
                 const name = names.get(id)
-                if(name) drawNameTag(ctx, ball.x, ball.y, name, camera.zoom)
+                if(name && !hidden.get(id)) drawNameTag(ctx, ball.x, ball.y, name, camera.zoom)
             }
+        }
+
+        if(placing){
+            const p = camera.mouse(mouse)
+            ctx.beginPath()
+            ctx.arc(p.x, p.y, 40, 0, Math.PI * 2)
+            ctx.fillStyle = canPlace(p.x, p.y) ? 'rgba(255, 255, 255, 0.35)' : 'rgba(255, 93, 93, 0.35)'
+            ctx.fill()
+            ctx.lineWidth = 3 / camera.zoom
+            ctx.strokeStyle = 'white'
+            ctx.stroke()
         }
 
         const aim = input.aim()
@@ -124,7 +168,10 @@ export function startLobby(canvas: HTMLCanvasElement): { dispose: () => void } {
             cancelAnimationFrame(frameId)
             observer.disconnect()
             input.dispose()
-        }
+            canvas.removeEventListener('pointermove', onMove)
+            canvas.removeEventListener('pointerup', onUp)
+        },
+        setPlacing: (on: boolean) => { placing = on }
     }
 }
 

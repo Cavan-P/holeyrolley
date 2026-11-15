@@ -5,6 +5,7 @@ import type { Theme } from './themes'
 
 const MAX_SIZE = 200
 const MARGIN = 16
+const FRAME = 8
 
 export function drawMinimap(ctx: CanvasRenderingContext2D, view: HoleView, camera: Camera, theme: Theme): void {
     const hole = view.hole
@@ -14,7 +15,17 @@ export function drawMinimap(ctx: CanvasRenderingContext2D, view: HoleView, camer
     const h = b.h * scale
 
     ctx.save()
-    ctx.translate(camera.viewW - w - MARGIN, camera.viewH - h - MARGIN)
+    ctx.translate(camera.viewW - w - MARGIN - FRAME, camera.viewH - h - MARGIN - FRAME)
+
+    ctx.beginPath()
+    ctx.roundRect(-FRAME, -FRAME + 5, w + FRAME * 2, h + FRAME * 2, 18)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'
+    ctx.fill()
+
+    ctx.beginPath()
+    ctx.roundRect(-FRAME, -FRAME, w + FRAME * 2, h + FRAME * 2, 18)
+    ctx.fillStyle = '#fbf6ea'
+    ctx.fill()
 
     ctx.beginPath()
     ctx.roundRect(0, 0, w, h, 12)
@@ -63,12 +74,6 @@ export function drawMinimap(ctx: CanvasRenderingContext2D, view: HoleView, camer
     }
 
     ctx.restore()
-
-    ctx.beginPath()
-    ctx.roundRect(0, 0, w, h, 12)
-    ctx.lineWidth = 2
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)'
-    ctx.stroke()
 
     ctx.restore()
 }

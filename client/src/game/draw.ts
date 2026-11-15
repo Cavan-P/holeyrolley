@@ -5,6 +5,7 @@ import {
     Ice, Slope, Water, RIPPLE_LIFE, clamp, map
 } from '@holey/shared'
 import { drawHat } from './art/hats'
+import { drawSpecial } from './art/special'
 
 export function applyTransform(ctx: CanvasRenderingContext2D, t: Transform): void {
     ctx.translate(t.x + t.px, t.y + t.py)
@@ -52,6 +53,7 @@ export function traceShape(ctx: CanvasRenderingContext2D, shape: Shape): void {
 }
 
 export function drawCollider(ctx: CanvasRenderingContext2D, c: Collider, color: string, flashColor: string = color): void {
+    if(drawSpecial(ctx, c, inner => drawCollider(ctx, inner, color, flashColor))) return
     if(c instanceof MovingCollider){
         ctx.save()
         applyTransform(ctx, c.transform)

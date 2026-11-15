@@ -7,6 +7,8 @@ export const MIN_POWER = 0.05
 
 const CUP_SINK_TIME = 0.35
 const WATER_SINK_TIME = 0.6
+const DRIFT_TIME = 1.4
+const DRIFT_SPEED = 70
 
 export class Ball {
     x: number
@@ -38,6 +40,8 @@ export class Ball {
     airPeak: number
 
     sinkTime: number
+    drifting: boolean
+    portal: unknown
 
     strokes: number
 
@@ -73,6 +77,8 @@ export class Ball {
         this.airPeak = 0
 
         this.sinkTime = -1
+        this.drifting = false
+        this.portal = null
 
         this.strokes = 0
 
@@ -123,10 +129,25 @@ export class Ball {
 
     sink(): void {
         this.sinkTime = 0
+        this.drifting = false
         this.vx = 0
         this.vy = 0
         this.airTime = 0
         this.strokes++
+    }
+
+    driftAway(): void {
+        this.sinkTime = 0
+        this.drifting = true
+        this.airTime = 0
+        this.strokes++
+
+        const s = this.speed()
+        if(s < DRIFT_SPEED){
+            const a = s ? Math.atan2(this.vy, this.vx) : -Math.PI / 2
+            this.vx = Math.cos(a) * DRIFT_SPEED
+            this.vy = Math.sin(a) * DRIFT_SPEED
+        }
     }
 
     sinking(): boolean {
@@ -149,6 +170,9 @@ export class Ball {
     }
 
     collide(w: Collider): void {
+        if(w.active && !w.active()) return
+        if(w.low && this.airborne()) return
+
         const [cx, cy] = w.closestPoint(this.x, this.y)
         const dx = this.x - cx
         const dy = this.y - cy
@@ -182,8 +206,14 @@ export class Ball {
         if(this.sinking()){
             this.sinkTime += dt
 
-            if(this.sinkTime >= WATER_SINK_TIME){
+            if(this.drifting){
+                this.x += this.vx * dt
+                this.y += this.vy * dt
+            }
+
+            if(this.sinkTime >= (this.drifting ? DRIFT_TIME : WATER_SINK_TIME)){
                 this.sinkTime = -1
+                this.drifting = false
                 this.resetToLast()
             }
 
@@ -230,7 +260,7 @@ export class Ball {
 
     sinkProgress(): number {
         if(this.holed()) return Math.min(1, this.holedTime / CUP_SINK_TIME)
-        if(this.sinking()) return Math.min(1, this.sinkTime / WATER_SINK_TIME)
+        if(this.sinking()) return Math.min(1, this.sinkTime / (this.drifting ? DRIFT_TIME : WATER_SINK_TIME))
         return 0
     }
 

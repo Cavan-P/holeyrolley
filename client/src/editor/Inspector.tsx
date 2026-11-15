@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import type { CourseObject, Keyframe, MotionPath, ObjectType, ShapeData, Style } from '@holey/shared'
+import { MAX_MAGNET, type CourseObject, type Keyframe, type MotionPath, type ObjectType, type ShapeData, type Skin, type Style } from '@holey/shared'
 import { PALETTE, THEMES, getTheme, type Theme } from '../game/art/themes'
 import type { Editor } from './useEditor'
 import { TYPE_LABELS, assetKey, canMove, defaultMotion } from './model'
@@ -49,6 +49,10 @@ function NothingSelected({ editor }: { editor: Editor }){
                     <input className={inputClass} value={hole.name} onFocus={editor.beginChange} onChange={e => editor.updateHole(h => ({ ...h, name: e.target.value }), false)} />
                 </Row>
                 <NumberField label='Par' value={hole.par} min={1} max={12} onStart={editor.beginChange} onChange={v => editor.updateHole(h => ({ ...h, par: Math.round(v) }), false)} />
+                <Toggle label='Off the fairway floats away' checked={hole.voidEdge ?? false} onChange={on => editor.updateHole(h => {
+                    const { voidEdge: _old, ...rest } = h
+                    return on ? { ...rest, voidEdge: true } : rest
+                })} />
             </Section>
 
             <Section title='Shortcuts'>
@@ -66,9 +70,32 @@ function NothingSelected({ editor }: { editor: Editor }){
     )
 }
 
-const THEME_COLOR: Record<ObjectType, keyof Theme> = {
-    fairway: 'turf', sand: 'sand', ice: 'ice', water: 'water', slope: 'slope',
+const THEME_COLOR: Record<ObjectType, Exclude<keyof Theme, 'label' | 'backdrop'>> = {
+    fairway: 'turf', sand: 'sand', ice: 'ice', water: 'water', lava: 'lava', slope: 'slope', faller: 'rail', magnet: 'magnet', spring: 'spring', conveyor: 'conveyor', portal: 'portal',
     wall: 'rail', curveWall: 'rail', arcWall: 'rail', bumper: 'bumper', post: 'rail', bridge: 'bridge', decor: 'decor'
+}
+
+const SKIN_OPTIONS: Partial<Record<ObjectType, Skin[]>> = {
+    post: ['rock', 'shell', 'asteroid', 'basalt', 'iceblock', 'neon', 'ghost', 'candycane', 'gear'],
+    bumper: ['starfish', 'pulsar', 'geyser', 'gumball', 'neon'],
+    wall: ['crab', 'rock', 'ufo', 'asteroid', 'basalt', 'iceblock', 'neon', 'ghost', 'fence', 'candycane', 'gear', 'girder'],
+    curveWall: ['rock', 'asteroid', 'basalt', 'iceblock', 'neon', 'ghost', 'fence', 'candycane', 'girder'],
+    water: ['ocean'],
+    ice: ['zerog'],
+    magnet: ['planet'],
+    faller: ['meteor', 'lavarock'],
+    decor: ['palm', 'umbrella', 'towel', 'planet', 'satellite', 'rocket', 'volcano', 'vent', 'pine', 'snowman', 'igloo', 'cabinet', 'slime', 'coin', 'tombstone', 'deadtree', 'pumpkin', 'lollipop', 'cupcake', 'gumdrop', 'gear', 'pipe', 'barrel', 'tree', 'bush']
+}
+
+const SKIN_LABELS: Record<Skin, string> = {
+    rock: 'Rock', shell: 'Shell', starfish: 'Starfish', crab: 'Crab', ocean: 'Ocean surf', palm: 'Palm tree', umbrella: 'Umbrella', towel: 'Towel',
+    asteroid: 'Asteroid', ufo: 'UFO', pulsar: 'Pulsar', zerog: 'Zero-G pad', meteor: 'Meteors', planet: 'Planet', satellite: 'Satellite', rocket: 'Rocket',
+    basalt: 'Basalt', geyser: 'Geyser', lavarock: 'Lava rocks', volcano: 'Volcano', vent: 'Steam vent',
+    iceblock: 'Ice block', pine: 'Snowy pine', snowman: 'Snowman', igloo: 'Igloo',
+    neon: 'Neon', cabinet: 'Arcade cabinet', slime: 'Pixel slime', coin: 'Coin',
+    ghost: 'Ghost', fence: 'Iron fence', tombstone: 'Tombstone', deadtree: 'Dead tree', pumpkin: 'Pumpkin',
+    candycane: 'Candy cane', gumball: 'Gumball', lollipop: 'Lollipop', cupcake: 'Cupcake', gumdrop: 'Gumdrop',
+    gear: 'Gear', girder: 'Girder', pipe: 'Pipe', barrel: 'Barrel', tree: 'Tree', bush: 'Bush'
 }
 
 function ObjectPanel({ editor, o, theme }: { editor: Editor, o: CourseObject, theme: Theme }){
@@ -153,6 +180,61 @@ function ObjectPanel({ editor, o, theme }: { editor: Editor, o: CourseObject, th
                     <>
                         {num('Radius', o.radius, v => ({ ...o, radius: v }), { min: 2, max: 80 })}
                         {num('Bounce', o.bounce, v => ({ ...o, bounce: v }), { min: 0, max: 1.5, step: 0.05 })}
+                    </>
+                )}
+
+                {o.type === 'magnet' && (
+                    <>
+                        {num('X', o.x, v => ({ ...o, x: v }))}
+                        {num('Y', o.y, v => ({ ...o, y: v }))}
+                        {num('Reach', o.radius, v => ({ ...o, radius: v }), { min: 20 })}
+                        {num('Pull', o.strength, v => ({ ...o, strength: v }), { min: -MAX_MAGNET, max: MAX_MAGNET, step: 10 })}
+                        <p className='text-xs text-sub'>Positive pulls balls in, negative pushes them away.</p>
+                    </>
+                )}
+
+                {o.type === 'spring' && num('Power', o.power, v => ({ ...o, power: v }), { min: 0.2, max: 2, step: 0.1 })}
+
+                {o.type === 'conveyor' && (() => {
+                    const angle = toDeg(Math.atan2(o.push.y, o.push.x))
+                    const speed = Math.hypot(o.push.x, o.push.y)
+                    const push = (a: number, s: number) => ({ ...o, push: { x: Math.cos(toRad(a)) * s, y: Math.sin(toRad(a)) * s } })
+                    return (
+                        <>
+                            {num('Direction', angle, a => push(a, speed), { suffix: '°' })}
+                            {num('Speed', speed, s => push(angle, s), { min: 0, step: 10 })}
+                        </>
+                    )
+                })()}
+
+                {o.type === 'portal' && (
+                    <>
+                        {num('Radius', o.radius, v => ({ ...o, radius: v }), { min: 10, max: 80 })}
+                        <p className='text-xs text-sub'>Rolling into either end pops the ball out of the other, keeping its speed.</p>
+                    </>
+                )}
+
+                {(o.type === 'wall' || o.type === 'curveWall' || o.type === 'arcWall' || o.type === 'post' || o.type === 'bumper') && (
+                    <>
+                        <Toggle label='Low (jump over it)' checked={o.low ?? false} onChange={low => commit(x => ({ ...x, low: low || undefined } as CourseObject))} />
+                        <Toggle label='Breaks when hit' checked={o.hits !== undefined} onChange={on => commit(x => ({ ...x, hits: on ? 2 : undefined } as CourseObject))} />
+                        {o.hits !== undefined && num('Hits to break', o.hits, v => ({ ...o, hits: Math.max(1, Math.round(v)) }), { min: 1, max: 10 })}
+                        <Toggle label='Ghost (fades in and out)' checked={o.phase !== undefined} onChange={on => commit(x => ({ ...x, phase: on ? { on: 2, off: 1.5, offset: 0 } : undefined } as CourseObject))} />
+                        {o.phase && (
+                            <>
+                                {num('Solid for', o.phase.on, v => ({ ...o, phase: { ...o.phase!, on: v } }), { min: 0.2, step: 0.1, suffix: 's' })}
+                                {num('Gone for', o.phase.off, v => ({ ...o, phase: { ...o.phase!, off: v } }), { min: 0.2, step: 0.1, suffix: 's' })}
+                                {num('Offset', o.phase.offset, v => ({ ...o, phase: { ...o.phase!, offset: v } }), { step: 0.1, suffix: 's' })}
+                            </>
+                        )}
+                    </>
+                )}
+
+                {o.type === 'faller' && (
+                    <>
+                        {num('Every', o.every, v => ({ ...o, every: v }), { min: 0.5, step: 0.1, suffix: 's' })}
+                        {num('Rock size', o.size, v => ({ ...o, size: v }), { min: 6, max: 60 })}
+                        <p className='text-xs text-sub'>Rocks land at random spots inside the area. A direct hit resets the ball, a near miss shoves it.</p>
                     </>
                 )}
 
@@ -301,6 +383,15 @@ function StyleSection({ editor, o, fallback }: { editor: Editor, o: CourseObject
                     onChange={e => setStyle({ opacity: Number(e.target.value) >= 1 ? undefined : Number(e.target.value) }, false)}
                 />
             </Row>
+
+            {SKIN_OPTIONS[o.type] && (
+                <Row label='Skin'>
+                    <select className={inputClass} value={style.skin ?? ''} onChange={e => setStyle({ skin: (e.target.value || undefined) as Skin | undefined })}>
+                        <option value=''>None</option>
+                        {SKIN_OPTIONS[o.type]!.map(s => <option key={s} value={s}>{SKIN_LABELS[s]}</option>)}
+                    </select>
+                </Row>
+            )}
 
             {o.type !== 'fairway' && (
                 <Row label='Image'>

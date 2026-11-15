@@ -1,5 +1,6 @@
 // App.tsx
 import { MainMenu } from './pages/MainMenu'
+import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router'
 import { Game } from './pages/Game'
 import { Public } from './pages/Public'
@@ -7,7 +8,9 @@ import { Party } from './pages/Party'
 import { Settings } from './pages/Settings'
 import { Locker } from './pages/Locker'
 import { TeeBox } from './pages/TeeBox'
-import { Editor } from './pages/Editor'
+import { Courses } from './pages/Courses'
+
+const Editor = import.meta.env.DEV ? lazy(() => import('./pages/Editor').then(m => ({ default: m.Editor }))) : null
 
 
 export function App(){
@@ -15,13 +18,14 @@ export function App(){
     return (
         <Routes>
             <Route path='/' element={ <MainMenu />} />
+            <Route path='/courses' element={ <Courses /> } />
             <Route path='/play' element={ <Game /> } />
             <Route path='/party' element={ <Party /> } />
             <Route path='/public' element={ <Public /> } />
             <Route path='/settings' element={ <Settings /> } />
             <Route path='/locker' element={ <Locker /> } />
             <Route path='/room/:code' element={ <TeeBox /> } />
-            <Route path='/editor' element={ <Editor /> } />
+            {Editor && <Route path='/editor' element={ <Suspense><Editor /></Suspense> } />}
             <Route path='*' element={<div>this page does not exist</div>} />
         </Routes>
     )

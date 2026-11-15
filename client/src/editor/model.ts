@@ -1,7 +1,7 @@
 import { type CourseObject, type HoleData, type ObjectType, type ShapeData, type ShapeType, type Vec, type WallObject, type CurveWallObject, buildShape, objectBounds, boundsCenter, wallPath, closestOnSegment, ArcWall, Bridge, normalizeAngle } from '@holey/shared'
 
-export type ToolId = 'select' | 'fairway' | 'sand' | 'ice' | 'water' | 'slope' | 'wall' | 'curveWall'
-    | 'arcWall' | 'bumper' | 'post' | 'bridge' | 'decor' | 'tee' | 'cup'
+export type ToolId = 'select' | 'fairway' | 'sand' | 'ice' | 'water' | 'lava' | 'slope' | 'faller' | 'spring' | 'conveyor' | 'wall' | 'curveWall'
+    | 'arcWall' | 'bumper' | 'post' | 'magnet' | 'portal' | 'bridge' | 'decor' | 'tee' | 'cup'
 
 export type Gesture = 'drag' | 'points' | 'click'
 
@@ -14,7 +14,11 @@ export const TOOLS: ToolInfo[] = [
     { id: 'sand', label: 'Sand', key: 's', group: 'Areas' },
     { id: 'ice', label: 'Ice', key: 'i', group: 'Areas' },
     { id: 'water', label: 'Water', key: 'q', group: 'Areas' },
+    { id: 'lava', label: 'Lava', key: 'k', group: 'Areas' },
     { id: 'slope', label: 'Slope', key: 'l', group: 'Areas' },
+    { id: 'faller', label: 'Falling rocks', key: 'o', group: 'Areas' },
+    { id: 'spring', label: 'Jump pad', key: 'j', group: 'Areas' },
+    { id: 'conveyor', label: 'Conveyor', key: 'y', group: 'Areas' },
 
     { id: 'wall', label: 'Wall', key: 'w', group: 'Walls' },
     { id: 'curveWall', label: 'Curved wall', key: 'c', group: 'Walls' },
@@ -22,13 +26,15 @@ export const TOOLS: ToolInfo[] = [
     { id: 'bumper', label: 'Bumper', key: 'b', group: 'Walls' },
     { id: 'post', label: 'Post', key: 'p', group: 'Walls' },
 
+    { id: 'magnet', label: 'Magnet', key: 'g', group: 'Other' },
+    { id: 'portal', label: 'Portal pair', key: 'e', group: 'Other' },
     { id: 'bridge', label: 'Bridge', key: 'r', group: 'Other' },
     { id: 'decor', label: 'Decor / image', key: 'd', group: 'Other' },
     { id: 'tee', label: 'Tee', key: 't', group: 'Other' },
     { id: 'cup', label: 'Cup', key: 'h', group: 'Other' }
 ]
 
-export const AREA_TOOLS: ToolId[] = ['fairway', 'sand', 'ice', 'water', 'slope']
+export const AREA_TOOLS: ToolId[] = ['fairway', 'sand', 'ice', 'water', 'lava', 'slope', 'faller', 'spring', 'conveyor']
 
 export const SHAPE_KINDS: { id: ShapeType, label: string }[] = [
     { id: 'rect', label: 'Rect' },
@@ -48,7 +54,7 @@ export function gestureFor(tool: ToolId, shapeKind: ShapeType): Gesture | null {
 }
 
 export const TYPE_LABELS: Record<ObjectType, string> = {
-    fairway: 'Fairway', sand: 'Sand', ice: 'Ice', water: 'Water', slope: 'Slope',
+    fairway: 'Fairway', sand: 'Sand', ice: 'Ice', water: 'Water', lava: 'Lava', slope: 'Slope', faller: 'Falling rocks', magnet: 'Magnet', spring: 'Jump pad', conveyor: 'Conveyor', portal: 'Portal pair',
     wall: 'Wall', curveWall: 'Curved wall', arcWall: 'Arc wall', bumper: 'Bumper', post: 'Post',
     bridge: 'Bridge', decor: 'Decor'
 }
@@ -106,7 +112,10 @@ export function createObject(tool: ToolId, shapeKind: ShapeType, start: Vec, end
 
         if(tool === 'fairway') return { ...base, type: 'fairway', shape, rails: true }
         if(tool === 'slope') return { ...base, type: 'slope', shape, push: { x: 150, y: 0 } }
-        return { ...base, type: tool as 'sand' | 'ice' | 'water', shape }
+        if(tool === 'faller') return { ...base, type: 'faller', shape, every: 2, size: 20 }
+        if(tool === 'spring') return { ...base, type: 'spring', shape, power: 1 }
+        if(tool === 'conveyor') return { ...base, type: 'conveyor', shape, push: { x: 200, y: 0 } }
+        return { ...base, type: tool as 'sand' | 'ice' | 'water' | 'lava', shape }
     }
 
     switch(tool){
@@ -127,6 +136,11 @@ export function createObject(tool: ToolId, shapeKind: ShapeType, start: Vec, end
                 : { ...base, type: 'bumper', a: { ...start }, b: { ...end }, radius: 10, kick: 260 }
         case 'post':
             return { ...base, type: 'post', x: start.x, y: start.y, radius: 10, bounce: 0.6 }
+        case 'portal':
+            if(dist(start, end) < 80) return null
+            return { ...base, type: 'portal', a: { ...start }, b: { ...end }, radius: 24 }
+        case 'magnet':
+            return { ...base, type: 'magnet', x: start.x, y: start.y, radius: Math.max(60, dist(start, end)) || 160, strength: 300 }
         case 'bridge':
             if(dist(start, end) < 100) return null
             return { ...base, layer: 1, type: 'bridge', a: { ...start }, b: { ...end }, width: 90, rails: true }
@@ -158,6 +172,10 @@ export function moveObject(o: CourseObject, dx: number, dy: number): CourseObjec
         case 'sand':
         case 'ice':
         case 'water':
+        case 'lava':
+        case 'faller':
+        case 'spring':
+        case 'conveyor':
         case 'slope':
             return { ...moved, shape: shiftShape(moved.shape, dx, dy) }
         case 'wall':
@@ -165,10 +183,12 @@ export function moveObject(o: CourseObject, dx: number, dy: number): CourseObjec
             return { ...moved, points: moved.points.map(p => shiftVec(p, dx, dy)) }
         case 'arcWall':
         case 'post':
+        case 'magnet':
         case 'decor':
             return { ...moved, x: moved.x + dx, y: moved.y + dy }
         case 'bumper':
         case 'bridge':
+        case 'portal':
             return { ...moved, a: shiftVec(moved.a, dx, dy), b: shiftVec(moved.b, dx, dy) }
     }
 }
@@ -233,6 +253,10 @@ export function getHandles(o: CourseObject): Handle[] {
         case 'sand':
         case 'ice':
         case 'water':
+        case 'lava':
+        case 'faller':
+        case 'spring':
+        case 'conveyor':
         case 'slope':
             handles = shapeHandles(o.shape)
             break
@@ -255,9 +279,11 @@ export function getHandles(o: CourseObject): Handle[] {
                 : [{ key: 'a', x: o.a.x, y: o.a.y, kind: 'point' }, { key: 'b', x: o.b.x, y: o.b.y, kind: 'point' }]
             break
         case 'post':
+        case 'magnet':
             handles = [{ key: 'r', x: o.x + o.radius, y: o.y, kind: 'size' }]
             break
         case 'bridge':
+        case 'portal':
             handles = [{ key: 'a', x: o.a.x, y: o.a.y, kind: 'point' }, { key: 'b', x: o.b.x, y: o.b.y, kind: 'point' }]
             break
         case 'decor':
@@ -318,6 +344,10 @@ export function dragHandle(o: CourseObject, key: string, p: Vec): CourseObject {
         case 'sand':
         case 'ice':
         case 'water':
+        case 'lava':
+        case 'faller':
+        case 'spring':
+        case 'conveyor':
         case 'slope':
             return { ...o, shape: dragShapeHandle(o.shape, key, p) }
         case 'wall':
@@ -330,8 +360,10 @@ export function dragHandle(o: CourseObject, key: string, p: Vec): CourseObject {
             if(key === 'r') return { ...o, radius: Math.max(3, dist(o.a, p)) }
             return { ...o, [key]: { ...p } }
         case 'post':
+        case 'magnet':
             return { ...o, radius: Math.max(3, dist(o, p)) }
         case 'bridge':
+        case 'portal':
             return { ...o, [key]: { ...p } }
         case 'decor':
             return { ...o, ...dragCorner(o, key, p) }
@@ -383,8 +415,16 @@ export function hitObject(o: CourseObject, p: Vec, slop: number): boolean {
         case 'sand':
         case 'ice':
         case 'water':
+        case 'lava':
+        case 'faller':
+        case 'spring':
+        case 'conveyor':
         case 'slope':
             return buildShape(o.shape).contains(p.x, p.y)
+        case 'portal':
+            return Math.hypot(p.x - o.a.x, p.y - o.a.y) <= o.radius + slop || Math.hypot(p.x - o.b.x, p.y - o.b.y) <= o.radius + slop
+        case 'magnet':
+            return Math.hypot(p.x - o.x, p.y - o.y) <= 34 + slop
         case 'wall':
         case 'curveWall':
             return nearPath(wallPath(o as WallObject | CurveWallObject), o.closed, p, o.thickness + slop)
@@ -438,7 +478,7 @@ export function defaultMotion(o: CourseObject) {
 }
 
 export function canMove(type: ObjectType): boolean {
-    return type !== 'fairway' && type !== 'bridge'
+    return type !== 'fairway' && type !== 'bridge' && type !== 'faller' && type !== 'portal'
 }
 
 export function assetKey(dataUrl: string): string {

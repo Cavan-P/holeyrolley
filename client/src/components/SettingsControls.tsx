@@ -11,9 +11,9 @@ export function Toggle({ label, on, onChange }: ToggleProps){
             aria-label={label}
             aria-pressed={on}
             onClick={() => onChange(!on)}
-            className={`${on ? 'bg-brand' : 'bg-track'} relative w-13 h-8 shrink-0 rounded-full transition-colors`}
+            className={`${on ? 'bg-brand' : 'bg-track'} relative w-15 h-8.5 shrink-0 rounded-full transition-colors`}
         >
-            <span className={`${on ? 'left-6' : 'left-1'} absolute top-1 size-6 rounded-full bg-white shadow-toggle transition-all`} />
+            <span className={`${on ? 'left-7.5' : 'left-1'} absolute top-1 size-6.5 rounded-full bg-white shadow-toggle transition-all`} />
         </button>
     )
 }
@@ -26,7 +26,7 @@ type SegmentedProps<T extends string> = {
 
 export function Segmented<T extends string>({ options, value, onChange }: SegmentedProps<T>){
     return (
-        <div className='grid auto-cols-fr grid-flow-col gap-1 p-1 bg-track rounded-2xl'>
+        <div className='grid auto-cols-fr grid-flow-col gap-1.5 p-1.5 bg-line rounded-2xl'>
             {options.map(o => {
                 const picked = o.value === value
 
@@ -36,7 +36,7 @@ export function Segmented<T extends string>({ options, value, onChange }: Segmen
                         type='button'
                         aria-pressed={picked}
                         onClick={() => onChange(o.value)}
-                        className={`${picked ? 'bg-putt text-putt-ink font-extrabold shadow-toggle' : 'font-bold'} h-12 rounded-xl transition-colors`}
+                        className={`${picked ? 'bg-ink text-card font-black' : 'font-extrabold'} h-12 rounded-xl transition-colors`}
                     >
                         {o.label}
                     </button>
@@ -67,7 +67,7 @@ export function VolumeSlider({ label, value, onChange }: VolumeProps){
                 onChange={e => onChange(Number(e.target.value))}
                 className='flex-1 h-7 accent-putt'
             />
-            <span className='min-w-16 text-center px-2.5 py-1 rounded-full bg-track text-sm font-extrabold tabular-nums'>
+            <span className='min-w-16 text-center px-2.5 py-1 rounded-full bg-line text-sm font-black tabular-nums'>
                 {percent === 0 ? 'Off' : `${percent}%`}
             </span>
         </div>
@@ -86,7 +86,7 @@ export function TrackTile({ name, picked, onPick }: TrackTileProps){
             type='button'
             aria-pressed={picked}
             onClick={onPick}
-            className={`${picked ? 'bg-putt text-putt-ink border-putt' : 'bg-sky border-transparent'} min-h-24 rounded-2xl p-3.5 border-2 flex flex-col justify-between items-start text-left transition-colors`}
+            className={`${picked ? 'bg-putt text-putt-ink border-ink press-ghost' : 'bg-white border-line hover:border-ink/40 cursor-pointer'} min-h-24 rounded-2xl p-3.5 border-3 flex flex-col justify-between items-start text-left font-black transition-colors`}
         >
             <svg aria-hidden='true' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.2' strokeLinecap='round' strokeLinejoin='round'>
                 <path d='M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z' />

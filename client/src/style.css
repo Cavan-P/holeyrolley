@@ -1,30 +1,26 @@
 @import "tailwindcss";
 
-/* lets you use dark: classes when <html class="dark"> — your Night mode */
-@custom-variant dark (&:where(.dark, .dark *));
-
 @theme {
-  /* Day palette (default) */
-  --color-sky: #dcf1ff;          /* page background */
-  --color-ink: #1d3319;          /* main text */
-  --color-sub: #4a6644;          /* subtitle, chevrons */
-  --color-brand: #3d8a2c;        /* "Rolley" in the title */
-  --color-card: #ffffff;         /* secondary buttons */
-  --color-track: #c4e2f4;        /* Day/Night toggle track */
-  --color-putt: #ff9f1c;         /* Play Online button */
-  --color-putt-ink: #1f1405;     /* text on the Play button */
-  --color-rail: #ffffff;         /* border around the course preview */
-  --color-turf: #6cc04a;         /* green stripe 1 */
-  --color-turf-stripe: #74c652;  /* green stripe 2 */
+  --color-ground: #12372a;       /* page background */
+  --color-ground-sub: #b7cfc0;   /* muted text on the page background */
+  --color-chalk: #f4efe1;        /* text on the page background */
+  --color-card: #fbf6ea;
+  --color-card-deep: #c9bd9f;    /* pressed edge under cream buttons */
+  --color-line: #ece3cf;         /* dividers and wells inside cards */
+  --color-ink: #1b2a22;          /* text on cards */
+  --color-sub: #5b6b61;          /* muted text on cards */
+  --color-brand: #1b6b4a;        /* toggles on, under-par scores */
+  --color-track: #d6ccb4;        /* toggles off */
+  --color-putt: #ff9f1c;
+  --color-putt-deep: #b86400;
+  --color-putt-ink: #2a1600;
+  --color-gold: #ffd23f;
   --color-hole: #1d3319;
   --color-hole-in: #10200d;      /* inner shadow of the hole */
   --color-flag: #ff5d5d;
-  --color-orb: #ffd23f;          /* sun (day) / moon (night) */
-  --color-star: #fff6e0;         /* night sky stars */
-  --color-firefly: #ffe58a;      /* night course fireflies */
 
   --font-sans: "Nunito", system-ui, sans-serif;
-  --font-display: "Fredoka", system-ui, sans-serif;
+  --font-display: "Lilita One", system-ui, sans-serif;
 
   /* animate-pop-in: grows in with a little overshoot. animate-rise-in: fades up from below */
   --animate-pop-in: pop-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -45,39 +41,30 @@
   }
 }
 
-:root {
-  --card-shadow: 0 1px 2px rgba(20,45,20,0.08), 0 4px 12px rgba(20,45,20,0.08);
-  --panel-shadow: 0 10px 30px rgba(20,45,20,0.15);
-  --orb-glow: 0 0 0 10px rgba(255,210,63,0.25);
-  --ball-glow: 0 3px 6px rgba(0,0,0,0.25);
-  --toggle-shadow: 0 1px 3px rgba(0,0,0,0.15);
+@utility shadow-card   { box-shadow: 0 8px 0 rgba(0,0,0,0.25); }
+@utility shadow-chip   { box-shadow: 0 5px 0 rgba(0,0,0,0.25); }
+@utility shadow-toggle { box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+@utility press-putt    { --edge: var(--color-putt-deep); @apply press; }
+@utility press-card    { --edge: var(--color-card-deep); @apply press; }
+@utility press-ghost   { --edge: rgba(0,0,0,0.3); @apply press; }
+@utility press {
+  box-shadow: 0 6px 0 var(--edge);
+  &:is(a, button):not(:disabled) {
+    cursor: pointer;
+    transition: translate 0.12s ease-out, box-shadow 0.12s ease-out, filter 0.12s ease-out;
+  }
+  &:is(a, button):not(:disabled):hover {
+    translate: 0 -3px;
+    box-shadow: 0 9px 0 var(--edge), 0 0 0 3px rgba(255,255,255,0.55);
+    filter: brightness(1.08);
+  }
+  &:is(a, button):not(:disabled):active {
+    translate: 0 4px;
+    box-shadow: 0 2px 0 var(--edge);
+  }
 }
 
-/* Night palette: same names, so bg-card etc. switch automatically */
-.dark {
-  --color-sky: #1b2a4a;
-  --color-ink: #fff6e0;
-  --color-sub: #b9c6e0;
-  --color-brand: #9be08a;
-  --color-card: #24375e;
-  --color-track: #15213b;
-  --color-putt: #ffb347;
-  --color-rail: #24375e;
-  --color-turf: #3f8f3a;
-  --color-turf-stripe: #449640;
-  --color-hole: #0a1408;
-  --color-hole-in: #050a04;
-  --color-flag: #ffb347;
-  --color-orb: #fff6e0;
-
-  --card-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.25);
-  --panel-shadow: 0 10px 30px rgba(0,0,0,0.35);
-  --orb-glow: 0 0 28px 6px rgba(255,246,224,0.2);
-  --ball-glow: 0 0 14px 5px rgba(255,229,138,0.7);
+@layer base {
+  button:not(:disabled), [role='button']:not([aria-disabled='true']) { cursor: pointer; }
 }
-
-@utility shadow-card   { box-shadow: var(--card-shadow); }
-@utility shadow-panel  { box-shadow: var(--panel-shadow); }
-@utility shadow-orb    { box-shadow: var(--orb-glow); }
-@utility shadow-ball   { box-shadow: var(--ball-glow); }
-@utility shadow-toggle { box-shadow: var(--toggle-shadow); }
+@utility bg-mowed      { background-color: var(--color-ground); background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 120px, transparent 120px 240px); }
