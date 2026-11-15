@@ -25,5 +25,7 @@ export type ClientMsg =
 export type ServerMsg = 
     | { type: 'room', code: string, settings: RoomSettings, players: Player[], yourId: string, hostId: string, roomPhase: RoomPhase }
     | { type: 'error', reason: 'notFound' | 'full' }
+    | { type: 'state', time: number, balls: BallState[] }
 
 export type RoomPhase = 'lobby' | 'playing'
+export type BallState = { id: string, x: number, y: number, layer: number, moving: boolean }

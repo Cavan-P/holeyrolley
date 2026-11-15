@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { startGame, type HoleResult } from '../game'
-import { darkwoodMeadows } from '../game/courses/darkwoodMeadows'
+import { darkwoodMeadows } from '@holey/shared'
 import { loadDraft } from '../editor/storage'
 import { Button } from '../components/Button'
 import { usePrefs } from '../settings/useSetting'

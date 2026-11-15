@@ -23,6 +23,28 @@ export function sendRoom(room: Room): void {
     }
 }
 
+export function sendState(room: Room): void {
+    if(!room.hole) return
+    
+    const balls = [...room.balls.entries()].map(([id, b]) => ({
+        id,
+        x: b.x,
+        y: b.y,
+        layer: b.layer,
+        moving: b.isMoving()
+    }))
+
+    const msg: ServerMsg = {
+        type: 'state',
+        time: room.hole.time,
+        balls
+    }
+
+    for(const member of room.players.values()){
+        send(member.socket, msg)
+    }
+}
+
 export function makeMember(name: string, cosmetics: Cosmetics, socket: WebSocket): Member {
     return {
         player: {

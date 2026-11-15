@@ -1,4 +1,4 @@
-import { COURSE_VERSION, type CourseData } from '@holey/shared'
+import { COURSE_VERSION, type CourseData } from '../course'
 
 const PI = Math.PI
 

@@ -1,6 +1,11 @@
 import type { ClientMsg, ServerMsg } from '@holey/shared'
 
 type RoomMsg = Extract<ServerMsg, { type: 'room' }>
+type StateMsg = Extract<ServerMsg, { type: 'state' }>
+
+export type TimedState = { msg: StateMsg, at: number }
+
+const STATE_BUFFER = 10
 
 export type ErrorReason =Extract<ServerMsg, { type: 'error' }>['reason']
 
@@ -18,9 +23,18 @@ let current: ConnectionState = {
 const listeners = new Set<() => void>()
 
 let socket: WebSocket | null = null
+let states: TimedState[] = []
 
 export function getSnapshot(): ConnectionState {
     return current
+}
+
+export function getLatestState(): StateMsg | null {
+    return states.at(-1)?.msg ?? null
+}
+
+export function getStates(): TimedState[] {
+    return states
 }
 
 export function subscribe(listener: () => void): () => void {
@@ -49,6 +63,7 @@ export function connect(): void {
     socket.onclose = () => {
         update({ status: 'closed', room: null })
         socket = null
+        states = []
     }
 
     socket.onmessage = event => {
@@ -63,7 +78,11 @@ export function connect(): void {
                 update({ room: msg, error: null })
             break }
             case 'error': { 
-                update({ error: msg.reason })    
+                update({ error: msg.reason })
+            break }
+            case 'state': {
+                states.push({ msg, at: performance.now() })
+                if(states.length > STATE_BUFFER) states.shift()
             break }
         }
     }
@@ -77,5 +96,6 @@ export function send(msg: ClientMsg): void {
 
 export function leave(): void {
     send({ type: 'leave' })
+    states = []
     update({ room: null })
 }

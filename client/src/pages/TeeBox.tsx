@@ -11,6 +11,7 @@ import { useConnection } from '../network/useConnection'
 import { ERROR_TEXT } from '../network/errorText'
 import { getCosmetics } from '../locker/store'
 import { loadName } from '../locker/name'
+import { startLobby } from '../game/lobby'
 
 function PlayerRow({ player, you, host }: { player: Player, you: boolean, host: boolean }){
     return (
@@ -47,6 +48,7 @@ export function TeeBox(){
     const room = connection.room
 
     const triedJoin = useRef(false)
+    const canvasRef = useRef<HTMLCanvasElement>(null)
     const [copied, setCopied] = useState(false)
 
     useEffect(() => { connect() }, [])
@@ -67,6 +69,16 @@ export function TeeBox(){
     useEffect(() => {
         if(room && room.code !== code.toUpperCase()) navigate(`/room/${room.code}`, { replace: true })
     }, [room, code, navigate])
+
+    const inRoom = room !== null
+
+    useEffect(() => {
+        const canvas = canvasRef.current
+        if(!canvas) return
+
+        const lobby = startLobby(canvas)
+        return () => lobby.dispose()
+    }, [inRoom])
 
     const backToParty = () => navigate(`/party?code=${code}`)
 
@@ -96,7 +108,7 @@ export function TeeBox(){
 
     return (
         <div className='h-full w-full overflow-y-auto bg-sky text-ink'>
-            <div className='max-w-6xl px-4 sm:px-14 pt-14 pb-16 flex flex-col gap-7'>
+            <div className='max-w-[1600px] px-4 sm:px-14 pt-14 pb-16 flex flex-col gap-7'>
                 <header className='flex flex-col gap-2'>
                     <p className='text-sm font-extrabold uppercase tracking-[0.3em] text-sub'>Party code</p>
                     <div className='flex flex-wrap items-center gap-x-6 gap-y-3'>
@@ -111,22 +123,22 @@ export function TeeBox(){
                     </div>
                 </header>
 
-                <div className='grid md:grid-cols-2 gap-5 items-start'>
-                    <SettingsSection title={`Players (${room.players.length}/${maxPlayers})`}>
-                        <ul className='pt-2 pb-1'>
-                            {room.players.map(p => (
-                                <PlayerRow key={p.id} player={p} you={p.id === room.yourId} host={p.id === room.hostId} />
-                            ))}
-                            {Array.from({ length: openSlots }, (_, i) => (
-                                <li key={`open-${i}`} className='flex items-center gap-4 py-3 border-t border-ink/10 text-sub'>
-                                    <div className='size-12 shrink-0 rounded-full border-2 border-dashed border-ink/20' />
-                                    <span>Waiting for a friend…</span>
-                                </li>
-                            ))}
-                        </ul>
-                    </SettingsSection>
-
+                <div className='grid md:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] gap-5 items-start'>
                     <div className='flex flex-col gap-5'>
+                        <SettingsSection title={`Players (${room.players.length}/${maxPlayers})`}>
+                            <ul className='pt-2 pb-1'>
+                                {room.players.map(p => (
+                                    <PlayerRow key={p.id} player={p} you={p.id === room.yourId} host={p.id === room.hostId} />
+                                ))}
+                                {Array.from({ length: openSlots }, (_, i) => (
+                                    <li key={`open-${i}`} className='flex items-center gap-4 py-3 border-t border-ink/10 text-sub'>
+                                        <div className='size-12 shrink-0 rounded-full border-2 border-dashed border-ink/20' />
+                                        <span>Waiting for a friend…</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </SettingsSection>
+
                         <SettingsSection title='Room settings' description={isHost ? 'Only you can change these.' : `${host?.name ?? 'The host'} picks these.`}>
                             <SettingRow label='Ball collision' description='Balls bump into each other.'>
                                 {isHost ? (
@@ -157,6 +169,10 @@ export function TeeBox(){
                             )}
                             <Button label='Leave party' onClick={leaveParty} />
                         </div>
+                    </div>
+
+                    <div className='rounded-xl overflow-hidden shadow-card'>
+                        <canvas ref={canvasRef} className='block w-full h-[75vh] min-h-[420px] touch-none' />
                     </div>
                 </div>
             </div>

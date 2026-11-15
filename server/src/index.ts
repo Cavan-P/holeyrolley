@@ -1,11 +1,11 @@
 import { WebSocketServer } from 'ws'
 
-import { makeMember, send, sendRoom } from './utilities'
+import { makeMember, send, sendRoom, sendState } from './utilities'
 import { type Member, type Room } from './types'
 import { parseClientMsg } from './validate'
+import { darkwoodMeadows, practiceGreen, buildHole, maxPlayers, Ball, type HoleData } from '@holey/shared'
 
 const wss = new WebSocketServer({ port: 3001 })
-const maxPlayers = 4
 
 const rooms = new Map<string, Room>()
 
@@ -23,6 +23,29 @@ function makeCode(): string {
     return c
 }
 
+const SPAWN_OFFSETS = [[-18, -18], [18, -18], [-18, 18], [18, 18]] as const
+
+function addBall(room: Room, member: Member): void {
+    if(!room.hole || !room.holeData) return
+
+    const [ox, oy] = SPAWN_OFFSETS[room.hole.balls.length % SPAWN_OFFSETS.length] ?? [0, 0]
+    const ball = new Ball(room.holeData.tee.x + ox, room.holeData.tee.y + oy, member.player.cosmetics)
+
+    room.hole.balls.push(ball)
+    room.balls.set(member.player.id, ball)
+}
+
+function setHole(room: Room, data: HoleData): void {
+    room.hole = buildHole(data, null).hole
+    room.hole.collideBalls = room.settings.collision
+    room.holeData = data
+    room.balls = new Map()
+
+    for(const member of room.players.values()){
+        addBall(room, member)
+    }
+}
+
 wss.on('connection', socket => {
     //once for every connection
 
@@ -33,10 +56,15 @@ wss.on('connection', socket => {
 
         const room = mine.room
         const myId = mine.member.player.id
+        const myBall = room.balls.get(myId)
 
         mine = null
 
         room.players.delete(myId)
+        room.balls.delete(myId)
+        if(room.hole) {
+            room.hole.balls = room.hole.balls.filter(b => b !== myBall)
+        }
 
         if(!room.players.size){
             rooms.delete(room.code)
@@ -79,8 +107,14 @@ wss.on('connection', socket => {
                     },
                     hostId: member.player.id,
                     players: new Map([[member.player.id, member]]),
-                    phase: 'lobby'
+                    phase: 'lobby',
+                    hole: null,
+                    holeData: null,
+                    holeIndex: 0,
+                    balls: new Map()
                 }
+
+                setHole(room, practiceGreen)
 
                 rooms.set(room.code, room)
 
@@ -119,6 +153,7 @@ wss.on('connection', socket => {
                 const member = makeMember(msg.name, msg.cosmetics, socket)
 
                 room.players.set(member.player.id, member)
+                addBall(room, member)
                 mine = { room, member }
                 sendRoom(room)
             break }
@@ -134,6 +169,8 @@ wss.on('connection', socket => {
                     collision: msg.settings.collision
                 }
 
+                if(mine.room.hole) mine.room.hole.collideBalls = msg.settings.collision
+
                 sendRoom(mine.room)
 
             break }
@@ -146,9 +183,31 @@ wss.on('connection', socket => {
 
                 if(mine.room.phase !== 'lobby') break
 
-                mine.room.phase = 'playing'
 
-                sendRoom(mine.room)
+                const holeData = darkwoodMeadows.holes[mine.room.holeIndex]
+                if(!holeData) break
+
+                const room = mine.room
+
+                setHole(room, holeData)
+                room.phase = 'playing'
+
+                sendRoom(room)
+
+            break }
+
+            //Shoot the ball
+            case 'shoot': { 
+                if(!mine) break
+
+                if(!mine.room.hole) break
+
+                const ball = mine.room.balls.get(mine.member.player.id)
+                if(!ball) break
+
+                if(ball.isMoving() || ball.holed() || ball.sinking()) break
+
+                ball.shoot(Math.cos(msg.angle), Math.sin(msg.angle), msg.power)
 
             break }
 
@@ -166,4 +225,30 @@ wss.on('connection', socket => {
     socket.on('close', leaveRoom)
     
 })
+
+const STEP = 1/120
+let last = performance.now()
+let acc = 0
+
+setInterval(() => {
+    const now = performance.now()
+    acc += Math.min((now - last) / 1000, 0.25)
+    last = now
+
+    while(acc >= STEP){
+        for(const room of rooms.values()){
+            if(room.hole){
+                room.hole.update(STEP)
+            }
+        }
+        acc -= STEP
+    }
+}, 1000 / 60)
+
+setInterval(() => {
+    for(const room of rooms.values()){
+        sendState(room)
+    }
+}, 1000 / 20)
+
 console.log('server on :3001')

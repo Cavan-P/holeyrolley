@@ -1,4 +1,4 @@
-import { type Player, type RoomSettings, type RoomPhase } from '@holey/shared'
+import { type Player, type RoomSettings, type RoomPhase, type Hole, type HoleData, type Ball } from '@holey/shared'
 import { type WebSocket } from 'ws'
 
 export type Member = {
@@ -12,4 +12,8 @@ export type Room = {
     hostId: string
     players: Map<string, Member>,
     phase: RoomPhase
+    hole: Hole | null
+    holeData: HoleData | null
+    holeIndex: number
+    balls: Map<string, Ball>
 }
