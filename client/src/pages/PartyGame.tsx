@@ -7,6 +7,7 @@ import { useConnection } from '../network/useConnection'
 import { startPartyGame, type PartyStatus } from '../game/party'
 import { recordScore } from '../progress/store'
 import { Tips } from '../components/Tips'
+import { SettingsOverlay } from '../components/SettingsOverlay'
 
 const chip = 'fixed font-sans text-ink bg-card shadow-chip rounded-2xl h-13 px-5 flex items-center'
 
@@ -75,6 +76,7 @@ export function PartyGame(){
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const gameRef = useRef<ReturnType<typeof startPartyGame> | null>(null)
     const leaving = useRef(false)
+    const [settingsOpen, setSettingsOpen] = useState(false)
     const [status, setStatus] = useState<PartyStatus>({ strokes: 0, time: 0, done: false, watching: null })
 
     const course = room ? COURSES[room.settings.course] : undefined
@@ -140,9 +142,11 @@ export function PartyGame(){
                     {isHost && !room.holeDone && (
                         <button type='button' onClick={() => send({ type: 'endHole' })} className='font-sans text-ink bg-card shadow-chip rounded-2xl h-13 px-5 font-black whitespace-nowrap'>End hole</button>
                     )}
+                    <button type='button' onClick={() => setSettingsOpen(true)} className='font-sans text-ink bg-card shadow-chip rounded-2xl h-13 px-5 font-black'>Settings</button>
                     <button type='button' onClick={exit} className='font-sans text-ink bg-card shadow-chip rounded-2xl h-13 px-5 font-black'>Leave</button>
                 </div>
             </div>
+            {settingsOpen && <SettingsOverlay onClose={() => setSettingsOpen(false)} />}
 
             <button
                 type='button'

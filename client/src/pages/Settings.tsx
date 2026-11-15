@@ -22,8 +22,6 @@ const SECTIONS = [
 
 export function Settings(){
 
-    const prefs = usePrefs()
-
     return (
         <Page title='Settings' subtitle='Changes save as you make them.'>
             <div className='flex flex-wrap gap-7 items-start'>
@@ -39,67 +37,77 @@ export function Settings(){
                 </nav>
 
                 <div className='flex-[999_1_36rem] min-w-0 flex flex-col gap-6'>
-                    <SettingsSection id='controls' title='Controls'>
-                        <SettingRow label='Shot style' description='Pull back like a slingshot, or push toward where you want the ball to go.' layout='stacked'>
-                            <Segmented options={SHOT_OPTIONS} value={prefs.dragDirection} onChange={v => setPref('dragDirection', v)} />
-                        </SettingRow>
-                        <SettingRow label='Aim guide' description='Show the dotted line while you aim.'>
-                            <Toggle label='Aim guide' on={prefs.aimGuide} onChange={v => setPref('aimGuide', v)} />
-                        </SettingRow>
-                        <SettingRow label='Camera follows ball' description='Keep the camera on your ball while it rolls. Off, it catches up once the ball stops.'>
-                            <Toggle label='Camera follows ball' on={prefs.cameraFollow} onChange={v => setPref('cameraFollow', v)} />
-                        </SettingRow>
-                    </SettingsSection>
-
-                    <SettingsSection id='audio' title='Audio'>
-                        <SettingRow label='Master volume' layout='stacked'>
-                            <VolumeSlider label='Master volume' value={prefs.masterVolume} onChange={v => setPref('masterVolume', v)} />
-                        </SettingRow>
-                        <SettingRow label='Music' layout='stacked'>
-                            <VolumeSlider label='Music volume' value={prefs.musicVolume} onChange={v => setPref('musicVolume', v)} />
-                        </SettingRow>
-                        <SettingRow label='Sound effects' layout='stacked'>
-                            <VolumeSlider label='Sound effects volume' value={prefs.sfxVolume} onChange={v => setPref('sfxVolume', v)} />
-                        </SettingRow>
-                        <SettingRow label='Mute in background' description='Go quiet when you switch to another tab.'>
-                            <Toggle label='Mute in background' on={prefs.muteInBackground} onChange={v => setPref('muteInBackground', v)} />
-                        </SettingRow>
-                    </SettingsSection>
-
-                    <SettingsSection id='soundtrack' title='Soundtrack' description='Plays in menus and on the course.'>
-                        <div className='grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-3 pt-3 pb-4'>
-                            {TRACKS.map(track => (
-                                <TrackTile key={track.id} name={track.name} picked={prefs.soundtrack === track.id} onPick={() => setPref('soundtrack', track.id)} />
-                            ))}
-                        </div>
-                    </SettingsSection>
-
-                    <SettingsSection id='display' title='Display'>
-                        <SettingRow label='Reduce motion' description='Fewer particles, no screen shake, simpler menu animations.'>
-                            <Toggle label='Reduce motion' on={prefs.reduceMotion} onChange={v => setPref('reduceMotion', v)} />
-                        </SettingRow>
-                        <SettingRow label='Stroke counter' description='Show your strokes in the corner while you play.'>
-                            <Toggle label='Stroke counter' on={prefs.strokeCounter} onChange={v => setPref('strokeCounter', v)} />
-                        </SettingRow>
-                        <SettingRow label='Minimap' description='Show a small map of the hole in the corner.'>
-                            <Toggle label='Minimap' on={prefs.minimap} onChange={v => setPref('minimap', v)} />
-                        </SettingRow>
-                    </SettingsSection>
-
-                    <SettingsSection id='multiplayer' title='Multiplayer'>
-                        <SettingRow label='Name tags' description="Show each player's name above their ball.">
-                            <Toggle label='Name tags' on={prefs.nameTags} onChange={v => setPref('nameTags', v)} />
-                        </SettingRow>
-                        <SettingRow label="Others' aim lines" description='Watch where other players are lining up.'>
-                            <Toggle label="Others' aim lines" on={prefs.othersAimLines} onChange={v => setPref('othersAimLines', v)} />
-                        </SettingRow>
-                        <SettingRow label='Your-turn chime' description="Play a sound when it's your shot.">
-                            <Toggle label='Your-turn chime' on={prefs.turnChime} onChange={v => setPref('turnChime', v)} />
-                        </SettingRow>
-                    </SettingsSection>
+                    <SettingsSections />
                 </div>
 
             </div>
         </Page>
+    )
+}
+
+export function SettingsSections(){
+    const prefs = usePrefs()
+
+    return (
+        <>
+        <SettingsSection id='controls' title='Controls'>
+            <SettingRow label='Shot style' description='Pull back like a slingshot, or push toward where you want the ball to go.' layout='stacked'>
+                <Segmented options={SHOT_OPTIONS} value={prefs.dragDirection} onChange={v => setPref('dragDirection', v)} />
+            </SettingRow>
+            <SettingRow label='Aim guide' description='Show the dotted line while you aim.'>
+                <Toggle label='Aim guide' on={prefs.aimGuide} onChange={v => setPref('aimGuide', v)} />
+            </SettingRow>
+            <SettingRow label='Camera follows ball' description='Keep the camera on your ball while it rolls. Off, it catches up once the ball stops.'>
+                <Toggle label='Camera follows ball' on={prefs.cameraFollow} onChange={v => setPref('cameraFollow', v)} />
+            </SettingRow>
+        </SettingsSection>
+
+        <SettingsSection id='audio' title='Audio'>
+            <SettingRow label='Master volume' layout='stacked'>
+                <VolumeSlider label='Master volume' value={prefs.masterVolume} onChange={v => setPref('masterVolume', v)} />
+            </SettingRow>
+            <SettingRow label='Music' layout='stacked'>
+                <VolumeSlider label='Music volume' value={prefs.musicVolume} onChange={v => setPref('musicVolume', v)} />
+            </SettingRow>
+            <SettingRow label='Sound effects' layout='stacked'>
+                <VolumeSlider label='Sound effects volume' value={prefs.sfxVolume} onChange={v => setPref('sfxVolume', v)} />
+            </SettingRow>
+            <SettingRow label='Mute in background' description='Go quiet when you switch to another tab.'>
+                <Toggle label='Mute in background' on={prefs.muteInBackground} onChange={v => setPref('muteInBackground', v)} />
+            </SettingRow>
+        </SettingsSection>
+
+        <SettingsSection id='soundtrack' title='Soundtrack' description='Plays in menus and on the course.'>
+            <div className='grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-3 pt-3 pb-4'>
+                {TRACKS.map(track => (
+                    <TrackTile key={track.id} name={track.name} picked={prefs.soundtrack === track.id} onPick={() => setPref('soundtrack', track.id)} />
+                ))}
+            </div>
+        </SettingsSection>
+
+        <SettingsSection id='display' title='Display'>
+            <SettingRow label='Reduce motion' description='Fewer particles, no screen shake, simpler menu animations.'>
+                <Toggle label='Reduce motion' on={prefs.reduceMotion} onChange={v => setPref('reduceMotion', v)} />
+            </SettingRow>
+            <SettingRow label='Stroke counter' description='Show your strokes in the corner while you play.'>
+                <Toggle label='Stroke counter' on={prefs.strokeCounter} onChange={v => setPref('strokeCounter', v)} />
+            </SettingRow>
+            <SettingRow label='Minimap' description='Show a small map of the hole in the corner.'>
+                <Toggle label='Minimap' on={prefs.minimap} onChange={v => setPref('minimap', v)} />
+            </SettingRow>
+        </SettingsSection>
+
+        <SettingsSection id='multiplayer' title='Multiplayer'>
+            <SettingRow label='Name tags' description="Show each player's name above their ball.">
+                <Toggle label='Name tags' on={prefs.nameTags} onChange={v => setPref('nameTags', v)} />
+            </SettingRow>
+            <SettingRow label="Others' aim lines" description='Watch where other players are lining up.'>
+                <Toggle label="Others' aim lines" on={prefs.othersAimLines} onChange={v => setPref('othersAimLines', v)} />
+            </SettingRow>
+            <SettingRow label='Your-turn chime' description="Play a sound when it's your shot.">
+                <Toggle label='Your-turn chime' on={prefs.turnChime} onChange={v => setPref('turnChime', v)} />
+            </SettingRow>
+        </SettingsSection>
+        </>
     )
 }

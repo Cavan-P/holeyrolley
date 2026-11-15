@@ -7,6 +7,14 @@ export type TimedState = { msg: StateMsg, at: number }
 
 const STATE_BUFFER = 10
 const REJOIN_KEY = 'holey-rejoin'
+const PING_EVERY = 2000
+
+let rtt = 0.1
+let pinger: ReturnType<typeof setInterval> | null = null
+
+export function getRtt(): number {
+    return rtt
+}
 
 export type ErrorReason =Extract<ServerMsg, { type: 'error' }>['reason']
 
@@ -61,11 +69,17 @@ export function connect(): void {
 
     update({ status: 'connecting' })
 
-    socket.onopen = () => 
+    socket.onopen = () => {
         update({ status: 'open' })
-    
+        const ping = () => send({ type: 'ping', id: performance.now() })
+        ping()
+        pinger = setInterval(ping, PING_EVERY)
+    }
+
 
     socket.onclose = () => {
+        if(pinger) clearInterval(pinger)
+        pinger = null
         update({ status: 'closed', room: null })
         socket = null
         states = []
@@ -82,6 +96,10 @@ export function connect(): void {
             case 'room': { 
                 try { sessionStorage.setItem(REJOIN_KEY, JSON.stringify({ code: msg.code, token: msg.yourToken })) } catch {}
                 update({ room: msg, error: null })
+            break }
+            case 'pong': {
+                const sample = (performance.now() - msg.id) / 1000
+                rtt = rtt + (sample - rtt) * 0.25
             break }
             case 'error': { 
                 update({ error: msg.reason })

@@ -110,10 +110,13 @@ export function parseClientMsg(value: unknown): ClientMsg | null {
             if(typeof value.angle !== 'number' || !Number.isFinite(value.angle)) return null
             if(typeof value.power !== 'number' || !Number.isFinite(value.power) || value.power < 0 || value.power > 1) return null
 
+            if(typeof value.seq !== 'number' || !Number.isFinite(value.seq)) return null
+
             return {
                 type: 'shoot',
                 angle: value.angle,
-                power: value.power
+                power: value.power,
+                seq: value.seq
             }
         }
         case 'start': {
@@ -121,6 +124,10 @@ export function parseClientMsg(value: unknown): ClientMsg | null {
         }
         case 'next': {
             return { type: 'next' }
+        }
+        case 'ping': {
+            if(typeof value.id !== 'number' || !Number.isFinite(value.id)) return null
+            return { type: 'ping', id: value.id }
         }
         case 'endHole': {
             return { type: 'endHole' }

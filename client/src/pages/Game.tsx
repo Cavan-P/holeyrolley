@@ -8,6 +8,7 @@ import { getBests, isUnlocked, recordScore, UNLOCK_OVER_PAR } from '../progress/
 import { usePrefs } from '../settings/useSetting'
 import { getCosmetics } from '../locker/store'
 import { Tips } from '../components/Tips'
+import { SettingsOverlay } from '../components/SettingsOverlay'
 
 function holeTitle(result: HoleResult): string {
     if(result.strokes === 1) return 'Hole in One!'
@@ -141,6 +142,7 @@ export function Game(){
     const [strokes, setStrokes] = useState(0)
     const [result, setResult] = useState<HoleResult | null>(null)
     const [card, setCard] = useState<HoleResult[]>([])
+    const [settingsOpen, setSettingsOpen] = useState(false)
 
     const navigate = useNavigate()
     const prefs = usePrefs()
@@ -196,9 +198,13 @@ export function Game(){
                     <span className='font-black text-lg'>Strokes <span className='font-display font-normal text-2xl'>{strokes}</span></span>
                 </div>
             )}
-            <button type='button' onClick={exit} className={`${chip} top-4 right-4 font-black`}>
-                {testing ? 'Back to editor' : 'Exit'}
-            </button>
+            <div className='fixed top-4 right-4 flex gap-3'>
+                <button type='button' onClick={() => setSettingsOpen(true)} className='font-sans text-ink bg-card shadow-chip rounded-2xl h-13 px-5 font-black'>Settings</button>
+                <button type='button' onClick={exit} className='font-sans text-ink bg-card shadow-chip rounded-2xl h-13 px-5 font-black'>
+                    {testing ? 'Back to editor' : 'Exit'}
+                </button>
+            </div>
+            {settingsOpen && <SettingsOverlay onClose={() => setSettingsOpen(false)} />}
             {result && (
                 <HoleComplete
                     result={result}

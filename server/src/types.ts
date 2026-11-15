@@ -5,6 +5,7 @@ export type Member = {
     player: Player
     socket: WebSocket | null
     token: string
+    seq: number
     gone: ReturnType<typeof setTimeout> | null
 }
 

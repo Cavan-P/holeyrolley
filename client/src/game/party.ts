@@ -1,4 +1,4 @@
-import { Ball, Breakable, type BallState, type CourseData } from '@holey/shared'
+import { Ball, Breakable, type BallState, type CourseData, type Hole, type ServerMsg } from '@holey/shared'
 import { Camera } from './classes/Camera'
 import { createGrassPattern } from './art/grass'
 import { getTheme } from './art/themes'
@@ -9,14 +9,17 @@ import { burst, stepParticles } from './art/celebrations'
 import { buildHole } from './build'
 import { setupInput } from './input'
 import { drawNameTag } from './lobby'
-import { clearStates, getStates, getSnapshot, send } from '../network/connection'
+import { clearStates, getRtt, getStates, getSnapshot, send } from '../network/connection'
 import { getPrefs } from '../settings/store'
 import { ballSounds, sfx } from '../audio/sfx'
 
 const STEP = 1 / 120
-const RESYNC_AFTER = 1.5
+const LEAD = 0.02
+const MAX_REPLAY = 0.6
 const SMOOTH_LIMIT = 120
 const SMOOTH_RATE = 12
+
+type StateMsg = Extract<ServerMsg, { type: 'state' }>
 
 export type PartyStatus = {
     strokes: number
@@ -28,15 +31,16 @@ export type PartyStatus = {
 type Track = {
     ball: Ball
     server: BallState
-    predicting: boolean
-    sawMove: boolean
-    restFor: number
     wasHoled: boolean
     ox: number
     oy: number
 }
 
-function adopt(ball: Ball, s: BallState): void {
+type Shot = { seq: number, angle: number, power: number, at: number }
+
+let lastSeq = 0
+
+function adopt(ball: Ball, s: BallState, hole: Hole): void {
     ball.x = s.x
     ball.y = s.y
     ball.vx = s.vx
@@ -52,20 +56,12 @@ function adopt(ball: Ball, s: BallState): void {
     ball.lastX = s.lastX
     ball.lastY = s.lastY
     ball.lastLayer = s.lastLayer
+    ball.cupX = s.cupX
+    ball.cupY = s.cupY
+    ball.portal = s.portal >= 0 ? hole.portals[s.portal] ?? null : null
 }
 
-function snap(t: Track, s: BallState): void {
-    const seenX = t.ball.x + t.ox
-    const seenY = t.ball.y + t.oy
-    adopt(t.ball, s)
-
-    t.ox = seenX - t.ball.x
-    t.oy = seenY - t.ball.y
-    if(Math.hypot(t.ox, t.oy) > SMOOTH_LIMIT || s.holed || s.sinkTime >= 0){
-        t.ox = 0
-        t.oy = 0
-    }
-}
+const canShoot = (b: Ball) => !b.isMoving() && !b.holed() && !b.sinking()
 
 export function startPartyGame(canvas: HTMLCanvasElement, course: CourseData, holeIndex: number, onStatus: (s: PartyStatus) => void) {
     const ctx = canvas.getContext('2d')
@@ -83,12 +79,15 @@ export function startPartyGame(canvas: HTMLCanvasElement, course: CourseData, ho
 
     const theme = getTheme(course.theme)
     const view = buildHole(data, course, null)
-    view.hole.balls = []
+    const hole = view.hole
+    hole.balls = []
     const grass = createGrassPattern(ctx, theme.turf, theme.turfStripe)
-    const breakables = view.hole.walls.filter((w): w is Breakable => w instanceof Breakable)
+    const breakables = hole.walls.filter((w): w is Breakable => w instanceof Breakable)
 
     const tracks = new Map<string, Track>()
-    let clock: number | null = null
+    let pending: Shot[] = []
+    let applied = new Set<number>()
+    let base: number | null = null
     let lastArrival = -1
     const sounds = ballSounds()
 
@@ -102,17 +101,69 @@ export function startPartyGame(canvas: HTMLCanvasElement, course: CourseData, ho
     }
     const nameOf = (id: string) => getSnapshot().room?.players.find(p => p.id === id)?.name ?? ''
     const visible = () => [...tracks].filter(([, t]) => !t.server.done)
+    const now = () => performance.now() / 1000 + (base ?? 0) + getRtt() + LEAD
 
-    const atRest = (b: Ball) => !b.isMoving() && !b.sinking() && b.airTime <= 0
-    const inPlay = (b: Ball) => !b.holed() && !b.sinking() && b.airTime <= 0
+    const shootDue = () => {
+        const mine = mineTrack()
+        if(!mine) return
+        for(const s of pending){
+            if(applied.has(s.seq) || s.at > hole.time + STEP / 2) continue
+            applied.add(s.seq)
+            if(canShoot(mine.ball)) mine.ball.shoot(Math.cos(s.angle), Math.sin(s.angle), s.power)
+        }
+    }
 
-    const focusId = (): string | undefined => {
+    const advance = (steps: number) => {
+        hole.balls = visible().map(([, t]) => t.ball)
+        hole.collideBalls = getSnapshot().room?.settings.collision ?? false
+        for(let i = 0; i < steps; i++){
+            shootDue()
+            hole.update(STEP)
+        }
+    }
+
+    const rewind = (msg: StateMsg) => {
+        const seen = new Map([...tracks].map(([id, t]) => [id, { x: t.ball.x + t.ox, y: t.ball.y + t.oy }]))
         const id = myId()
-        if(id && tracks.has(id) && !tracks.get(id)!.server.done) return id
 
-        const others = visible().map(([k]) => k)
-        if(!others.length) return id
-        return others[watchIndex % others.length]
+        for(const s of msg.balls){
+            let t = tracks.get(s.id)
+            if(!t){
+                const player = getSnapshot().room?.players.find(p => p.id === s.id)
+                if(!player) continue
+                t = { ball: new Ball(s.x, s.y, player.cosmetics), server: s, wasHoled: s.holed, ox: 0, oy: 0 }
+                tracks.set(s.id, t)
+                if(s.id === id) camera.snapTo(s.x, s.y)
+            }
+            t.server = s
+            adopt(t.ball, s, hole)
+            if(s.id === id) pending = pending.filter(p => p.seq > s.seq)
+        }
+
+        for(const bid of tracks.keys()){
+            if(!msg.balls.some(b => b.id === bid)) tracks.delete(bid)
+        }
+
+        msg.breaks.forEach(([left, broken], i) => {
+            const b = breakables[i]
+            if(!b) return
+            b.left = left
+            b.broken = broken
+        })
+
+        hole.setTime(msg.time)
+        applied = new Set()
+        advance(Math.round(Math.min(MAX_REPLAY, Math.max(0, now() - msg.time)) / STEP))
+
+        for(const [bid, t] of tracks){
+            const was = seen.get(bid)
+            t.ox = was ? was.x - t.ball.x : 0
+            t.oy = was ? was.y - t.ball.y : 0
+            if(Math.hypot(t.ox, t.oy) > SMOOTH_LIMIT){
+                t.ox = 0
+                t.oy = 0
+            }
+        }
     }
 
     const input = setupInput({
@@ -121,40 +172,24 @@ export function startPartyGame(canvas: HTMLCanvasElement, course: CourseData, ho
         origin: () => mineTrack()?.ball ?? { x: 0, y: 0 },
         canAim: () => {
             const t = mineTrack()
-            return !!t && !t.predicting && atRest(t.ball) && !t.ball.holed() && !t.server.moving && !t.server.done && !overview
+            return !!t && !pending.length && canShoot(t.ball) && t.ball.airTime <= 0 && !t.server.done && !overview
         },
         onShoot: ({ dx, dy, power }) => {
             const t = mineTrack()
             if(!t) return
             const angle = Math.atan2(dy, dx)
-            t.ball.shoot(Math.cos(angle), Math.sin(angle), power)
-            t.predicting = true
-            t.sawMove = false
-            t.restFor = 0
-            send({ type: 'shoot', angle, power })
+            const seq = lastSeq = Math.max(lastSeq + 1, Date.now())
+            pending.push({ seq, angle, power, at: hole.time })
+            shootDue()
+            send({ type: 'shoot', angle, power, seq })
         }
     })
 
-    const markHits = () => {
-        const list = visible().map(([, t]) => t)
-        for(const a of list){
-            if(!a.predicting || !inPlay(a.ball)) continue
-            for(const b of list){
-                if(b === a || b.predicting || !inPlay(b.ball) || a.ball.layer !== b.ball.layer) continue
-                if(Math.hypot(a.ball.x - b.ball.x, a.ball.y - b.ball.y) <= a.ball.rad + b.ball.rad + 0.5){
-                    b.predicting = true
-                    b.sawMove = false
-                    b.restFor = 0
-                }
-            }
-        }
-    }
-
     let lastStatus = ''
 
-    const frame = (now: number) => {
-        const dt = Math.min((now - last) / 1000, 0.1)
-        last = now
+    const frame = (time: number) => {
+        const dt = Math.min((time - last) / 1000, 0.1)
+        last = time
 
         const latest = getStates().at(-1)
         const id = myId()
@@ -162,72 +197,12 @@ export function startPartyGame(canvas: HTMLCanvasElement, course: CourseData, ho
         if(latest && latest.at !== lastArrival){
             lastArrival = latest.at
             const sample = latest.msg.time - latest.at / 1000
-            clock = clock === null ? sample : clock + (sample - clock) * 0.1
-
-            latest.msg.breaks.forEach(([left, broken], i) => {
-                const b = breakables[i]
-                if(!b) return
-                b.left = left
-                b.broken = broken
-            })
-
-            for(const s of latest.msg.balls){
-                let t = tracks.get(s.id)
-                if(!t){
-                    const player = getSnapshot().room?.players.find(p => p.id === s.id)
-                    if(!player) continue
-                    const ball = new Ball(s.x, s.y, player.cosmetics)
-                    adopt(ball, s)
-                    t = { ball, server: s, predicting: false, sawMove: false, restFor: 0, wasHoled: s.holed, ox: 0, oy: 0 }
-                    tracks.set(s.id, t)
-                    if(s.id === id) camera.snapTo(s.x, s.y)
-                }
-
-                t.server = s
-                if(t.predicting){
-                    if(s.moving) t.sawMove = true
-                    if(s.holed && !t.ball.holed()){
-                        snap(t, s)
-                        t.predicting = false
-                    }
-                }
-                else snap(t, s)
-            }
-
-            for(const bid of tracks.keys()){
-                if(!latest.msg.balls.some(b => b.id === bid)) tracks.delete(bid)
-            }
+            base = base === null ? sample : base + (sample - base) * 0.1
+            rewind(latest.msg)
         }
-
-        for(const [bid, t] of tracks){
-            if(!t.predicting) continue
-            if(!atRest(t.ball)){
-                t.restFor = 0
-                continue
-            }
-
-            t.restFor += dt
-            const serverRest = !t.server.moving && t.server.sinkTime < 0 && t.server.airTime <= 0
-            const caughtUp = bid === id ? t.server.strokes >= t.ball.strokes : t.sawMove
-            if((serverRest && caughtUp) || t.restFor > RESYNC_AFTER){
-                snap(t, t.server)
-                t.predicting = false
-            }
-        }
-
-        if(clock !== null){
-            const target = now / 1000 + clock
-            const behind = target - view.hole.time
-            view.hole.collideBalls = getSnapshot().room?.settings.collision ?? false
-            view.hole.balls = visible().map(([, t]) => t.ball)
-
-            if(behind < -0.1 || behind > 0.5) view.hole.setTime(target)
-            else {
-                for(let n = Math.floor(behind / STEP); n > 0; n--){
-                    view.hole.update(STEP)
-                    if(view.hole.collideBalls) markHits()
-                }
-            }
+        else if(base !== null){
+            const behind = now() - hole.time
+            if(behind > 0) advance(Math.min(Math.floor(behind / STEP), 12))
         }
 
         const fade = Math.exp(-dt * SMOOTH_RATE)
@@ -236,7 +211,7 @@ export function startPartyGame(canvas: HTMLCanvasElement, course: CourseData, ho
             t.oy *= fade
 
             if(t.ball.holed() && !t.wasHoled){
-                if(!getPrefs().reduceMotion) view.particles.push(...burst(t.ball.cosmetics.celebration, t.ball.x, t.ball.y))
+                if(!getPrefs().reduceMotion) view.particles.push(...burst(t.ball.cosmetics.celebration, t.ball.cupX, t.ball.cupY))
                 if(bid !== id) sfx.cup(0.5)
             }
             t.wasHoled = t.ball.holed()
@@ -246,11 +221,17 @@ export function startPartyGame(canvas: HTMLCanvasElement, course: CourseData, ho
         if(mine) sounds(mine.ball)
         view.particles = stepParticles(view.particles, dt)
 
+        const focusId = (): string | undefined => {
+            if(id && mine && !mine.server.done) return id
+            const others = visible().map(([k]) => k)
+            if(!others.length) return id
+            return others[watchIndex % others.length]
+        }
         const focus = focusId()
         const target = focus ? tracks.get(focus) : undefined
 
         if(overview){
-            const b = view.hole.bounds
+            const b = hole.bounds
             camera.targetX = b.x + b.w / 2
             camera.targetY = b.y + b.h / 2
             camera.targetZoom = camera.fitZoom(b)
@@ -263,7 +244,7 @@ export function startPartyGame(canvas: HTMLCanvasElement, course: CourseData, ho
 
         const status: PartyStatus = {
             strokes: mine?.ball.strokes ?? 0,
-            time: Math.floor(view.hole.time),
+            time: Math.floor(hole.time),
             done: !!mine?.server.done,
             watching: focus && focus !== id ? nameOf(focus) : null
         }
@@ -277,7 +258,7 @@ export function startPartyGame(canvas: HTMLCanvasElement, course: CourseData, ho
         const visArea = camera.visibleRect()
         ctx.fillStyle = theme.scenery
         ctx.fillRect(visArea.x, visArea.y, visArea.w, visArea.h)
-        drawBackdrop(ctx, theme, visArea, view.hole.time)
+        drawBackdrop(ctx, theme, visArea, hole.time)
 
         const shown = visible()
         for(const [, t] of shown){

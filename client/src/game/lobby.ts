@@ -42,7 +42,7 @@ export function startLobby(canvas: HTMLCanvasElement, onPlaced: () => void): { d
         camera,
         origin: () => myBall() ?? { x: 0, y: 0 },
         canAim: () => myBall() !== undefined && !myMoving && !placing,
-        onShoot: ({ dx, dy, power }) => send({ type: 'shoot', angle: Math.atan2(dy, dx), power })
+        onShoot: ({ dx, dy, power }) => send({ type: 'shoot', angle: Math.atan2(dy, dx), power, seq: Date.now() })
     })
 
     const toCanvas = (e: PointerEvent) => {

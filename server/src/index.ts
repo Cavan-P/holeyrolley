@@ -356,6 +356,7 @@ wss.on('connection', socket => {
             //Shoot the ball
             case 'shoot': { 
                 if(!mine) break
+                mine.member.seq = Math.max(mine.member.seq, msg.seq)
 
                 if(!mine.room.hole) break
                 if(mine.room.holeDone || mine.room.pickedUp.has(mine.member.player.id)) break
@@ -404,6 +405,10 @@ wss.on('connection', socket => {
 
                 sendRoom(room)
 
+            break }
+
+            case 'ping': {
+                send(socket, { type: 'pong', id: msg.id })
             break }
 
             case 'endHole': {

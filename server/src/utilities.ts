@@ -1,4 +1,4 @@
-import { Breakable, OBSTACLE_KINDS, type Cosmetics, type ServerMsg } from '@holey/shared';
+import { Breakable, OBSTACLE_KINDS, type Portal, type Cosmetics, type ServerMsg } from '@holey/shared';
 import { type WebSocket } from 'ws'
 import type { Member, Room } from './types';
 import { randomUUID } from 'node:crypto';
@@ -52,7 +52,11 @@ export function sendState(room: Room): void {
         airPeak: b.airPeak,
         lastX: b.lastX,
         lastY: b.lastY,
-        lastLayer: b.lastLayer
+        lastLayer: b.lastLayer,
+        cupX: b.cupX,
+        cupY: b.cupY,
+        portal: room.hole!.portals.indexOf(b.portal as Portal),
+        seq: room.players.get(id)?.seq ?? 0
     }))
 
     const breaks = room.hole.walls.flatMap(w => w instanceof Breakable ? [[w.left, w.broken] as [number, number]] : [])
@@ -79,6 +83,7 @@ export function makeMember(name: string, cosmetics: Cosmetics, socket: WebSocket
         },
         socket,
         token: randomUUID(),
+        seq: 0,
         gone: null
     }
 }
