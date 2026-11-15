@@ -44,7 +44,15 @@ export function sendState(room: Room): void {
         done: b.finished() || room.pickedUp.has(id),
         holedTime: b.holedTime,
         sinkTime: b.sinkTime,
-        drifting: b.drifting
+        drifting: b.drifting,
+        vx: b.vx,
+        vy: b.vy,
+        airTime: b.airTime,
+        airTotal: b.airTotal,
+        airPeak: b.airPeak,
+        lastX: b.lastX,
+        lastY: b.lastY,
+        lastLayer: b.lastLayer
     }))
 
     const breaks = room.hole.walls.flatMap(w => w instanceof Breakable ? [[w.left, w.broken] as [number, number]] : [])

@@ -74,12 +74,14 @@ export function PartyGame(){
 
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const gameRef = useRef<ReturnType<typeof startPartyGame> | null>(null)
+    const leaving = useRef(false)
     const [status, setStatus] = useState<PartyStatus>({ strokes: 0, time: 0, done: false, watching: null })
 
     const course = room ? COURSES[room.settings.course] : undefined
     const holeIndex = room?.holeIndex ?? 0
 
     useEffect(() => {
+        if(leaving.current) return
         if(!room || room.roomPhase === 'lobby') navigate(`/room/${code}`, { replace: true })
     }, [room, code, navigate])
 
@@ -110,6 +112,7 @@ export function PartyGame(){
     const timeLeft = limit === null ? null : Math.max(0, limit - status.time)
 
     const exit = () => {
+        leaving.current = true
         leave()
         navigate('/party')
     }
@@ -119,24 +122,26 @@ export function PartyGame(){
             <canvas ref={canvasRef} className='touch-none fixed inset-0 w-full h-full block' />
             {!room.holeDone && <Tips hole={hole} />}
 
-            <div className={`${chip} top-4 left-4 gap-3.5 pointer-events-none`}>
-                <span className='hidden sm:inline font-black text-xs uppercase tracking-[0.15em] text-sub'>Hole {holeIndex + 1} · Par {hole?.par}</span>
-                <span className='hidden sm:block w-0.5 h-6 bg-line' />
-                <span className='font-black text-lg'>Strokes <span className='font-display font-normal text-2xl'>{status.strokes}</span></span>
-                {room.settings.strokeLimit !== null && hole && <span className='font-bold text-sub'>/ {hole.par + room.settings.strokeLimit}</span>}
-            </div>
-
-            {timeLeft !== null && !room.holeDone && (
-                <div className={`${chip} top-4 left-1/2 -translate-x-1/2 font-display text-3xl pointer-events-none ${timeLeft <= 10 ? 'text-[#9a3b2e]' : ''}`}>
-                    {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+            <div className='fixed top-4 inset-x-4 flex items-start justify-between gap-3 pointer-events-none'>
+                <div className='font-sans text-ink bg-card shadow-chip rounded-2xl h-13 px-5 flex items-center gap-3.5 whitespace-nowrap'>
+                    <span className='hidden md:inline font-black text-xs uppercase tracking-[0.15em] text-sub'>Hole {holeIndex + 1} · Par {hole?.par}</span>
+                    <span className='hidden md:block w-0.5 h-6 bg-line' />
+                    <span className='font-black text-lg'>Strokes <span className='font-display font-normal text-2xl'>{status.strokes}</span></span>
+                    {room.settings.strokeLimit !== null && hole && <span className='font-bold text-sub'>/ {hole.par + room.settings.strokeLimit}</span>}
                 </div>
-            )}
 
-            <div className='fixed top-4 right-4 flex gap-3'>
-                {isHost && !room.holeDone && (
-                    <button type='button' onClick={() => send({ type: 'endHole' })} className='font-sans text-ink bg-card shadow-chip rounded-2xl h-13 px-5 font-black'>End hole</button>
+                {timeLeft !== null && !room.holeDone && (
+                    <div className={`font-sans bg-card shadow-chip rounded-2xl h-13 px-5 flex items-center font-display text-3xl ${timeLeft <= 10 ? 'text-[#9a3b2e]' : 'text-ink'}`}>
+                        {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+                    </div>
                 )}
-                <button type='button' onClick={exit} className='font-sans text-ink bg-card shadow-chip rounded-2xl h-13 px-5 font-black'>Leave</button>
+
+                <div className='flex flex-wrap justify-end gap-3 pointer-events-auto'>
+                    {isHost && !room.holeDone && (
+                        <button type='button' onClick={() => send({ type: 'endHole' })} className='font-sans text-ink bg-card shadow-chip rounded-2xl h-13 px-5 font-black whitespace-nowrap'>End hole</button>
+                    )}
+                    <button type='button' onClick={exit} className='font-sans text-ink bg-card shadow-chip rounded-2xl h-13 px-5 font-black'>Leave</button>
+                </div>
             </div>
 
             <button

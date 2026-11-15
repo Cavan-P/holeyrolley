@@ -50,4 +50,4 @@ export type ServerMsg =
     | { type: 'state', time: number, balls: BallState[], breaks: [number, number][] }
 
 export type RoomPhase = 'lobby' | 'playing'
-export type BallState = { id: string, x: number, y: number, layer: number, moving: boolean, holed: boolean, strokes: number, done: boolean, holedTime: number, sinkTime: number, drifting: boolean }
+export type BallState = { id: string, x: number, y: number, layer: number, moving: boolean, holed: boolean, strokes: number, done: boolean, holedTime: number, sinkTime: number, drifting: boolean, vx: number, vy: number, airTime: number, airTotal: number, airPeak: number, lastX: number, lastY: number, lastLayer: number }
