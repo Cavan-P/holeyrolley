@@ -27,15 +27,6 @@ export class PolygonShape extends Shape {
         return inside
     }
 
-    trace(ctx: CanvasRenderingContext2D): void {
-        const [first, ...rest] = this.points
-        if(!first) return
-
-        ctx.moveTo(first[0], first[1])
-        for(const [x, y] of rest) ctx.lineTo(x, y)
-        ctx.closePath()
-    }
-
     bounds(): { x: number, y: number, w: number, h: number } {
         const xs = this.points.map(p => p[0])
         const ys = this.points.map(p => p[1])

@@ -1,4 +1,4 @@
-import { type Player, type RoomSettings } from '@holey/shared'
+import { type Player, type RoomSettings, type RoomPhase } from '@holey/shared'
 import { type WebSocket } from 'ws'
 
 export type Member = {
@@ -10,5 +10,6 @@ export type Room = {
     code: string
     settings: RoomSettings
     hostId: string
-    players: Map<string, Member>
+    players: Map<string, Member>,
+    phase: RoomPhase
 }

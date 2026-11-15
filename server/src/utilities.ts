@@ -17,7 +17,8 @@ export function sendRoom(room: Room): void {
             settings: room.settings,
             players: players,
             yourId: member.player.id,
-            hostId: room.hostId
+            hostId: room.hostId,
+            roomPhase: room.phase
         })
     }
 }

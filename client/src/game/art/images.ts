@@ -1,6 +1,6 @@
-import type { Bounds, Shape } from '../shapes/Shape'
-import type { Transform } from '../classes/Transform'
+import type { Bounds, Shape, Transform } from '@holey/shared'
 import type { Drawable } from '../classes/Drawable'
+import { applyTransform, traceShape } from '../draw'
 
 const cache = new Map<string, HTMLImageElement>()
 
@@ -51,11 +51,11 @@ export class ImageSkin implements Drawable {
         }
 
         ctx.save()
-        this.transform?.apply(ctx)
+        if(this.transform) applyTransform(ctx, this.transform)
 
         if(this.clip){
             ctx.beginPath()
-            this.clip.trace(ctx)
+            traceShape(ctx, this.clip)
             ctx.clip()
         }
 

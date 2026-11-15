@@ -1,6 +1,7 @@
 import type { Drawable } from './Drawable'
-import type { Transform } from './Transform'
+import type { Transform } from '@holey/shared'
 import { getImage, drawImageIn } from '../art/images'
+import { applyTransform } from '../draw'
 
 export class Decor implements Drawable {
     x: number
@@ -27,7 +28,7 @@ export class Decor implements Drawable {
 
     display(ctx: CanvasRenderingContext2D): void {
         ctx.save()
-        this.transform?.apply(ctx)
+        if(this.transform) applyTransform(ctx, this.transform)
 
         ctx.translate(this.x + this.w / 2, this.y + this.h / 2)
         ctx.rotate(this.rotation)

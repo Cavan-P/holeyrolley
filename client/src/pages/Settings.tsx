@@ -79,6 +79,9 @@ export function Settings(){
                         <SettingRow label='Stroke counter' description='Show your strokes in the corner while you play.'>
                             <Toggle label='Stroke counter' on={prefs.strokeCounter} onChange={v => setPref('strokeCounter', v)} />
                         </SettingRow>
+                        <SettingRow label='Minimap' description='Show a small map of the hole in the corner.'>
+                            <Toggle label='Minimap' on={prefs.minimap} onChange={v => setPref('minimap', v)} />
+                        </SettingRow>
                     </SettingsSection>
 
                     <SettingsSection title='Multiplayer'>

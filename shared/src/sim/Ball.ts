@@ -1,8 +1,7 @@
 import type { Collider } from './Collider'
-import { smooth } from '../utilities/smooth'
-import type { Surface } from '../surfaces/Surface'
-import type { Cosmetics } from '@holey/shared'
-import { drawHat } from '../art/hats'
+import { smooth } from './smooth'
+import type { Surface } from './surfaces/Surface'
+import type { Cosmetics } from '../cosmetics'
 
 export const MIN_POWER = 0.05
 
@@ -229,7 +228,7 @@ export class Ball {
         }
     }
 
-    private sinkProgress(): number {
+    sinkProgress(): number {
         if(this.holed()) return Math.min(1, this.holedTime / CUP_SINK_TIME)
         if(this.sinking()) return Math.min(1, this.sinkTime / WATER_SINK_TIME)
         return 0
@@ -237,31 +236,5 @@ export class Ball {
 
     finished(): boolean {
         return this.holed() && this.holedTime >= CUP_SINK_TIME
-    }
-
-    display(ctx: CanvasRenderingContext2D): void {
-        const sink = this.sinkProgress()
-        if(sink >= 1) return
-
-        const h = this.height()
-
-        ctx.save()
-        ctx.globalAlpha = 1 - sink
-
-        ctx.fillStyle = `rgba(0, 0, 0, ${0.22 - h * 0.08})`
-        ctx.beginPath()
-        ctx.ellipse(this.x + 2 + h * 5, this.y + 3 + h * 5, this.rad, this.rad * 0.8, 0, 0, 2 * Math.PI)
-        ctx.fill()
-
-        const r = this.rad * (1 + h * 0.35) * (1 - sink * 0.6)
-
-        ctx.fillStyle = this.color
-        ctx.beginPath()
-        ctx.ellipse(this.x, this.y - h * 10, r, r, 0, 0, 2 * Math.PI)
-        ctx.fill()
-
-        drawHat(ctx, this.cosmetics.hat, this.x, this.y - h * 10, r)
-
-        ctx.restore()
     }
 }

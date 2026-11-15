@@ -1,7 +1,7 @@
 import type { Collider } from './Collider'
 import type { Transform } from './Transform'
 import type { Ball } from './Ball'
-import type { Point } from '../shapes/Shape'
+import type { Point } from './shapes/Shape'
 
 export class MovingCollider implements Collider {
     inner: Collider
@@ -32,12 +32,5 @@ export class MovingCollider implements Collider {
 
     onHit(ball: Ball, nx: number, ny: number): void {
         this.inner.onHit?.(ball, nx, ny)
-    }
-
-    display(ctx: CanvasRenderingContext2D): void {
-        ctx.save()
-        this.transform.apply(ctx)
-        this.inner.display(ctx)
-        ctx.restore()
     }
 }

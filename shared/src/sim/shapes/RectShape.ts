@@ -1,5 +1,5 @@
 import { Shape, arcPoints, type Point } from './Shape'
-import { clamp } from '../utilities/math'
+import { clamp } from '../math'
 
 export class RectShape extends Shape {
     x: number
@@ -27,11 +27,6 @@ export class RectShape extends Shape {
         const nx = clamp(x, this.x + r, this.x + this.w - r)
         const ny = clamp(y, this.y + r, this.y + this.h - r)
         return Math.hypot(x - nx, y - ny) <= r
-    }
-
-    trace(ctx: CanvasRenderingContext2D): void {
-        if(this.radius > 0) ctx.roundRect(this.x, this.y, this.w, this.h, this.radius)
-        else ctx.rect(this.x, this.y, this.w, this.h)
     }
 
     bounds(): { x: number, y: number, w: number, h: number } {

@@ -145,7 +145,7 @@ export function TeeBox(){
                             {isHost ? (
                                 <button
                                     type='button'
-                                    disabled
+                                    onClick={() => send({ type: 'start' })}
                                     className='h-14 w-full rounded-xl bg-putt text-putt-ink font-extrabold text-left px-6 disabled:opacity-50 disabled:cursor-not-allowed'
                                 >
                                     Start game

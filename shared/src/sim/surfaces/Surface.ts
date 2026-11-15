@@ -1,9 +1,8 @@
-import type { Ball } from '../classes/Ball'
+import type { Ball } from '../Ball'
 import type { Shape } from '../shapes/Shape'
 
 export class Surface {
     shape: Shape
-    color: string
 
     dragMul: number
     rollMul: number
@@ -12,9 +11,8 @@ export class Surface {
 
     layer: number
 
-    constructor(shape: Shape, color: string, dragMul: number = 1, rollMul: number = 1){
+    constructor(shape: Shape, dragMul: number = 1, rollMul: number = 1){
         this.shape = shape
-        this.color = color
 
         this.dragMul = dragMul
         this.rollMul = rollMul
@@ -26,13 +24,6 @@ export class Surface {
     affect(_ball: Ball, _dt: number): void {}
 
     update(_dt: number): void {}
-
-    display(ctx: CanvasRenderingContext2D): void {
-        ctx.fillStyle = this.color
-        ctx.beginPath()
-        this.shape.trace(ctx)
-        ctx.fill()
-    }
 }
 
 export function surfaceAt(surfaces: Surface[], x: number, y: number, layer: number = 0): Surface | undefined {

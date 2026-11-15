@@ -1,13 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { CourseObject, HoleData, ShapeType, Vec } from '@holey/shared'
+import { type CourseObject, type HoleData, type ShapeType, type Vec, type Point, Bridge, buildShape, objectBounds, wallPath, evaluateMotion } from '@holey/shared'
 import { Camera } from '../game/classes/Camera'
-import { Bridge } from '../game/classes/Bridge'
 import { buildHole } from '../game/build'
 import { createGrassPattern } from '../game/art/grass'
 import { getTheme } from '../game/art/themes'
-import { buildShape, objectBounds, wallPath } from '../game/data'
-import type { Point } from '../game/shapes/Shape'
-import { evaluateMotion } from '../game/utilities/motion'
 import type { Editor } from './useEditor'
 import {
     type Handle, type ToolId, TOOLS, assetKey, createObject, dragHandle, gestureFor,
@@ -123,7 +119,7 @@ export function EditorCanvas({ editor, tool, setTool, shapeKind, grid, preview }
 
             if(preview && !wasPreviewing) previewStart = now
             wasPreviewing = preview
-            built.setTime(preview ? (now - previewStart) / 1000 : 0)
+            built.hole.setTime(preview ? (now - previewStart) / 1000 : 0)
 
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
             ctx.fillStyle = theme.scenery
@@ -582,7 +578,7 @@ function outlineObject(ctx: CanvasRenderingContext2D, o: CourseObject, color: st
             ctx.arc(o.x, o.y, o.radius + 3, 0, Math.PI * 2)
             break
         case 'bridge':
-            for(const loop of new Bridge(o.a.x, o.a.y, o.b.x, o.b.y, o.width, false, '', '').shape.outline()) strokePoints(ctx, loop, true)
+            for(const loop of new Bridge(o.a.x, o.a.y, o.b.x, o.b.y, o.width, false).shape.outline()) strokePoints(ctx, loop, true)
             break
         case 'decor': {
             ctx.translate(o.x + o.w / 2, o.y + o.h / 2)

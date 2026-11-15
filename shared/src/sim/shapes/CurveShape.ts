@@ -1,6 +1,6 @@
 import { type Point } from './Shape'
 import { PolygonShape } from './PolygonShape'
-import { smoothPoints } from '../utilities/spline'
+import { smoothPoints } from '../spline'
 
 export class CurveShape extends PolygonShape {
     controls: Point[]

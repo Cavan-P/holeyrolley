@@ -20,7 +20,10 @@ export type ClientMsg =
     | { type: 'leave' }
     | { type: 'shoot', angle: number, power: number }
     | { type: 'update', settings: RoomSettings }
+    | { type: 'start'}
 
 export type ServerMsg = 
-    | { type: 'room', code: string, settings: RoomSettings, players: Player[], yourId: string, hostId: string }
+    | { type: 'room', code: string, settings: RoomSettings, players: Player[], yourId: string, hostId: string, roomPhase: RoomPhase }
     | { type: 'error', reason: 'notFound' | 'full' }
+
+export type RoomPhase = 'lobby' | 'playing'

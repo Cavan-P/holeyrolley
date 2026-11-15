@@ -1,10 +1,10 @@
-import type { Cosmetics, CourseData } from '@holey/shared'
+import { type Cosmetics, type CourseData, type Ball, clamp, lerp } from '@holey/shared'
 import { Camera } from './classes/Camera'
-import { type Hole } from './classes/Hole'
-import { type Ball } from './classes/Ball'
+import { type HoleView } from './classes/HoleView'
 
 import { createGrassPattern } from './art/grass'
 import { drawAim } from './art/aim'
+import { drawMinimap } from './art/minimap'
 import { getTheme } from './art/themes'
 
 import { setupInput } from './input'
@@ -23,7 +23,7 @@ export type HoleResult = {
     isLast: boolean
 }
 
-export function startGame(canvas: HTMLCanvasElement, course: CourseData, events: GameEvents, cosmetics: Cosmetics, startHole: number = 0): {nextHole: () => void, dispose: () => void} {
+export function startGame(canvas: HTMLCanvasElement, course: CourseData, events: GameEvents, cosmetics: Cosmetics, startHole: number = 0): {nextHole: () => void, setOverview: (on: boolean) => void, dispose: () => void} {
     const ctx = canvas.getContext('2d')
 
     if(!ctx) throw new Error('2D canvas not supported')
@@ -34,8 +34,10 @@ export function startGame(canvas: HTMLCanvasElement, course: CourseData, events:
     let acc = 0
 
     let holeIndex = 0
-    let hole: Hole
+    let view: HoleView
     let ball: Ball
+
+    let overview = false
 
     let lastStrokes = 0
     let reportedComplete = false
@@ -49,9 +51,9 @@ export function startGame(canvas: HTMLCanvasElement, course: CourseData, events:
 
         holeIndex = index
 
-        hole = buildHole(data, course, cosmetics)
+        view = buildHole(data, course, cosmetics)
 
-        const first = hole.balls[0]
+        const first = view.hole.balls[0]
         if(!first) throw new Error('Hole has no balls')
 
         ball = first
@@ -72,7 +74,7 @@ export function startGame(canvas: HTMLCanvasElement, course: CourseData, events:
         canvas,
         camera,
         origin: () => ball,
-        canAim: () => !ball.isMoving() && !ball.holed() && !ball.sinking(),
+        canAim: () => !ball.isMoving() && !ball.holed() && !ball.sinking() && !overview,
         onShoot: ({ dx, dy, power }) => ball.shoot(dx, dy, power)
     })
 
@@ -81,9 +83,26 @@ export function startGame(canvas: HTMLCanvasElement, course: CourseData, events:
         last = now
 
         while(acc >= STEP){
-            hole.update(STEP)
-            // With follow off, the camera waits for the ball to stop, then glides over to it
-            if(getPrefs().cameraFollow || !ball.isMoving()) camera.follow(ball, STEP)
+            view.update(STEP)
+
+            if(overview){
+                camera.targetX = view.hole.bounds.x + view.hole.bounds.w / 2
+                camera.targetY = view.hole.bounds.y + view.hole.bounds.h / 2
+
+                camera.targetZoom = camera.fitZoom(view.hole.bounds)
+            }
+            else {
+
+                if(getPrefs().cameraFollow || !ball.isMoving()) camera.follow(ball, STEP)
+
+                let t = clamp(ball.speed() / ball.maxSpeed, 0, 1)
+
+                t *= t
+                camera.targetZoom = getPrefs().reduceMotion ? 1 : lerp(1, 0.75, t)
+            }
+            
+            camera.update(STEP)
+
             acc -= STEP
         }
 
@@ -97,7 +116,7 @@ export function startGame(canvas: HTMLCanvasElement, course: CourseData, events:
             events.onHoleComplete({
                 hole: holeIndex + 1,
                 strokes: ball.strokes,
-                par: hole.par,
+                par: view.hole.par,
                 isLast: holeIndex === course.holes.length - 1
             })
         }
@@ -108,13 +127,15 @@ export function startGame(canvas: HTMLCanvasElement, course: CourseData, events:
         ctx.fillStyle = theme.scenery
         ctx.fillRect(visArea.x, visArea.y, visArea.w, visArea.h)
 
-        hole.drawGround(ctx, grass)
-        hole.draw(ctx, ball)
+        view.drawGround(ctx, grass)
+        view.draw(ctx, ball)
 
         const aim = input.aim()
         if(aim && getPrefs().aimGuide) drawAim(ctx, ball, aim)
 
         camera.end(ctx)
+
+        if(getPrefs().minimap) drawMinimap(ctx, view, camera, theme)
 
         frameId = requestAnimationFrame(frame)
     }
@@ -131,14 +152,38 @@ export function startGame(canvas: HTMLCanvasElement, course: CourseData, events:
     }
     resize()
 
+    const onKeyDown = (e: KeyboardEvent) => {
+        if(e.key === 'Tab'){
+            e.preventDefault()
+            overview = true
+        }
+    }
+    const onKeyUp = (e: KeyboardEvent) => {
+        if(e.key === 'Tab'){
+            e.preventDefault()
+            overview = false
+        }
+    }
+    const onBlur = () => {
+        overview = false
+    }
+
     window.addEventListener('resize', resize)
+
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+    window.addEventListener('blur', onBlur)
 
     return {
         nextHole: () => loadHole(holeIndex + 1),
+        setOverview: (on: boolean) => { overview = on },
         dispose: () => {
             cancelAnimationFrame(frameId)
 
             window.removeEventListener('resize', resize)
+            window.removeEventListener('keydown', onKeyDown)
+            window.removeEventListener('keyup', onKeyUp)
+            window.removeEventListener('blur', onBlur)
 
             input.dispose()
         }

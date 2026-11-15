@@ -1,5 +1,5 @@
 import { Shape, arcPoints, type Point } from './Shape'
-import { angleInArc, normalizeAngle } from '../utilities/angles'
+import { angleInArc, normalizeAngle } from '../angles'
 
 // A curved band: the part of a donut between two angles.
 // Angles are radians, 0 = pointing right, increasing clockwise on screen
@@ -26,13 +26,6 @@ export class ArcShape extends Shape {
         if(d < this.inner || d > this.outer) return false
 
         return angleInArc(Math.atan2(y - this.y, x - this.x), this.start, this.end)
-    }
-
-    trace(ctx: CanvasRenderingContext2D): void {
-        ctx.moveTo(this.x + Math.cos(this.start) * this.outer, this.y + Math.sin(this.start) * this.outer)
-        ctx.arc(this.x, this.y, this.outer, this.start, this.end)
-        ctx.arc(this.x, this.y, this.inner, this.end, this.start, true)
-        ctx.closePath()
     }
 
     // The whole circle's box. Bigger than needed for short arcs, but always contains it

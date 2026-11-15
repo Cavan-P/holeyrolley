@@ -159,6 +159,17 @@ export function Game(){
     return (
         <>
             <canvas ref={canvasRef} className='touch-none fixed inset-0 w-full h-full block' />
+
+            <button 
+                type='button'
+                onPointerDown={()=>{gameRef.current?.setOverview(true)}}
+                onPointerUp={()=>{gameRef.current?.setOverview(false)}}
+                onPointerLeave={()=>{gameRef.current?.setOverview(false)}}
+                onPointerCancel={()=>{gameRef.current?.setOverview(false)}}
+                className='fixed bottom-4 left-4 font-sans font-bold text-ink bg-card shadow-card rounded-full px-4 py-2 hover:bg-sky select-none touch-none'>
+                    Hole Overview
+            </button>
+
             {prefs.strokeCounter && (
                 <div className='fixed top-4 left-4 pointer-events-none font-sans text-ink text-xl bg-card pb-2 pt-2 pr-4 pl-4 rounded-full'>
                     Strokes: {strokes}

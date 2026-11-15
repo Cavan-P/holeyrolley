@@ -1,4 +1,4 @@
-import type { MotionPath } from '@holey/shared'
+import type { MotionPath } from '../course'
 
 export function evaluateMotion(path: MotionPath, t: number): { x: number, y: number, angle: number } {
     const keys = [...path.keys].sort((a, b) => a.t - b.t)

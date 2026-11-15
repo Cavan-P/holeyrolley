@@ -1,4 +1,4 @@
-import { type Ball, MIN_POWER } from '../classes/Ball'
+import { type Ball, MIN_POWER } from '@holey/shared'
 import type { Aim } from '../input'
 import { lerpColor } from '../utilities/lerpColor'
 

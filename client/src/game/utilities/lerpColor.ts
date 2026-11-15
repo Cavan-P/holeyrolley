@@ -1,4 +1,4 @@
-import { lerp, clamp } from './math'
+import { lerp, clamp } from '@holey/shared'
 
 type RGB = {
     r: number

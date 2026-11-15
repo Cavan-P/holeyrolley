@@ -1,10 +1,9 @@
 import { useEffect, useRef } from 'react'
-import type { Cosmetics} from '@holey/shared'
-import { Ball } from '../game/classes/Ball'
-import { Cup } from '../game/classes/Cup'
+import { type Cosmetics, Ball, Cup } from '@holey/shared'
 import { burst, drawParticles, stepParticles, type Particle } from '../game/art/celebrations'
 import { createGrassPattern } from '../game/art/grass'
 import { getTheme } from '../game/art/themes'
+import { drawBall, drawCup, drawFlag, readCupColors } from '../game/draw'
 
 type Props = {
     cosmetics: Cosmetics
@@ -42,6 +41,7 @@ export function BallPreview({ cosmetics, view, className, animate }: Props){
 
         const ball = new Ball(animate ? startX : view / 2, animate ? groundY : viewH * 0.62, cosmetics)
         const cup = new Cup(cupX, groundY)
+        const cupColors = readCupColors()
 
         let particles: Particle[] = []
         let burstDone = false
@@ -57,7 +57,7 @@ export function BallPreview({ cosmetics, view, className, animate }: Props){
 
             if(!animate){
                 ctx.clearRect(0, 0, view, viewH)
-                ball.display(ctx)
+                drawBall(ctx, ball)
                 return
             }
 
@@ -70,7 +70,7 @@ export function BallPreview({ cosmetics, view, className, animate }: Props){
 
             ctx.fillStyle = grass
             ctx.fillRect(0, 0, view, viewH)
-            cup.display(ctx)
+            drawCup(ctx, cup, cupColors)
 
             if(t < ARRIVE){
                 const k = 1 - Math.pow(1 - t / ARRIVE, 3)
@@ -87,11 +87,11 @@ export function BallPreview({ cosmetics, view, className, animate }: Props){
 
                 ctx.save()
                 ctx.globalAlpha = t > LOOP - FADE_IN ? (t - (LOOP - FADE_IN)) / FADE_IN : 1
-                ball.display(ctx)
+                drawBall(ctx, ball)
                 ctx.restore()
             }
 
-            cup.drawFlag(ctx, visible ? ball : null)
+            drawFlag(ctx, cup, visible ? ball : null)
 
             particles = stepParticles(particles, dt)
             drawParticles(ctx, particles)

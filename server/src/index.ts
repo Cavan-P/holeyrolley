@@ -78,7 +78,8 @@ wss.on('connection', socket => {
                         collision: false
                     },
                     hostId: member.player.id,
-                    players: new Map([[member.player.id, member]])
+                    players: new Map([[member.player.id, member]]),
+                    phase: 'lobby'
                 }
 
                 rooms.set(room.code, room)
@@ -132,6 +133,20 @@ wss.on('connection', socket => {
                 mine.room.settings = {
                     collision: msg.settings.collision
                 }
+
+                sendRoom(mine.room)
+
+            break }
+
+            //Start the game
+            case 'start': { 
+                if(!mine) break
+
+                if(mine.member.player.id !== mine.room.hostId) break
+
+                if(mine.room.phase !== 'lobby') break
+
+                mine.room.phase = 'playing'
 
                 sendRoom(mine.room)
 

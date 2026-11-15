@@ -4,8 +4,6 @@ export type Bounds = { x: number, y: number, w: number, h: number }
 export abstract class Shape {
     abstract contains(x: number, y: number): boolean
 
-    abstract trace(ctx: CanvasRenderingContext2D): void
-
     abstract bounds(): Bounds
 
     // The shape's edge(s) as closed loops of points. Used for auto rails and editor hit testing

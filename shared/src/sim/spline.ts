@@ -1,4 +1,4 @@
-import type { Point } from '../shapes/Shape'
+import type { Point } from './shapes/Shape'
 
 export function smoothPoints(points: Point[], closed: boolean, stepsPerSegment: number = 12): Point[] {
     const n = points.length

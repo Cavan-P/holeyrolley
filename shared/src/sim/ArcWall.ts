@@ -1,5 +1,5 @@
 import type { Collider } from './Collider'
-import { angleInArc } from '../utilities/angles'
+import { angleInArc } from './angles'
 
 // A curved rail along part of a circle. Angles work like ArcShape's
 export class ArcWall implements Collider {
@@ -12,10 +12,9 @@ export class ArcWall implements Collider {
     r: number
     bounce: number
 
-    color: string
     layer: number
 
-    constructor(x: number, y: number, radius: number, start: number, end: number, r: number, bounce: number, color: string = '#8b4a2b', layer: number = 0){
+    constructor(x: number, y: number, radius: number, start: number, end: number, r: number, bounce: number, layer: number = 0){
         this.x = x
         this.y = y
         this.radius = radius
@@ -25,7 +24,6 @@ export class ArcWall implements Collider {
         this.r = r
         this.bounce = bounce
 
-        this.color = color
         this.layer = layer
     }
 
@@ -44,15 +42,5 @@ export class ArcWall implements Collider {
         const by = this.y + Math.sin(this.end) * this.radius
 
         return Math.hypot(px - ax, py - ay) <= Math.hypot(px - bx, py - by) ? [ax, ay] : [bx, by]
-    }
-
-    display(ctx: CanvasRenderingContext2D): void {
-        ctx.strokeStyle = this.color
-        ctx.lineCap = 'round'
-        ctx.lineWidth = this.r * 2
-
-        ctx.beginPath()
-        ctx.arc(this.x, this.y, this.radius, this.start, this.end)
-        ctx.stroke()
     }
 }

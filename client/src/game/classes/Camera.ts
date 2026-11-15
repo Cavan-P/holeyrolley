@@ -1,16 +1,19 @@
-import { clamp } from '../utilities/math'
-import { smooth } from '../utilities/smooth'
-import { Ball } from './Ball'
+import { type Bounds, Ball, clamp, smooth } from '@holey/shared'
 
 export class Camera {
     x: number
     y: number
     zoom: number
 
+    targetX: number
+    targetY: number
+    targetZoom: number
+
     viewW: number
     viewH: number
 
     speed: number
+    zoomSpeed: number
 
     lookahead: number
 
@@ -29,17 +32,28 @@ export class Camera {
         this.viewH = viewH
 
         this.speed = 5
+        this.zoomSpeed = 3
         this.lookahead = 0.25
         this.bounds = null
 
         this.leadX = 0
         this.leadY = 0
         this.leadSpeed = 1.5
+
+        this.targetX = x
+        this.targetY = y
+        this.targetZoom = 1
     }
 
     snapTo(x: number, y: number): void {
         this.x = x
         this.y = y
+
+        this.targetX = x
+        this.targetY = y
+
+        this.zoom = 1
+        this.targetZoom = 1
     }
 
     clampTarget(tx: number, ty: number): [number, number] {
@@ -54,14 +68,28 @@ export class Camera {
         return [tx, ty]
     }
 
+    fitZoom(rect: Bounds): number {
+        const size = Math.min(this.viewW / rect.w, this.viewH / rect.h)
+        return Math.min(1, size)
+    }
+
     follow(ball: Ball, dt: number): void {
         this.leadX += smooth(this.leadX, ball.vx * this.lookahead, this.leadSpeed, dt)
         this.leadY += smooth(this.leadY, ball.vy * this.lookahead, this.leadSpeed, dt)
 
         const [tx, ty] = this.clampTarget(ball.x + this.leadX, ball.y + this.leadY)
 
-        this.x += smooth(this.x, tx, this.speed, dt)
-        this.y += smooth(this.y, ty, this.speed, dt)
+        this.targetX = tx
+        this.targetY = ty
+    }
+
+    update(dt: number): void {
+        this.x += smooth(this.x, this.targetX, this.speed, dt)
+        this.y += smooth(this.y, this.targetY, this.speed, dt)
+
+        let logZoom = Math.log(this.zoom)
+        logZoom += smooth(logZoom, Math.log(this.targetZoom), this.zoomSpeed, dt)
+        this.zoom = Math.exp(logZoom)
     }
 
     begin(ctx: CanvasRenderingContext2D): void {

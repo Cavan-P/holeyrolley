@@ -15,6 +15,7 @@ export type Prefs = {
     theme: 'day' | 'night' | 'system'
     reduceMotion: boolean
     strokeCounter: boolean
+    minimap: boolean
 
     nameTags: boolean
     othersAimLines: boolean
@@ -35,6 +36,7 @@ const DEFAULTS: Prefs = {
     theme: 'day',
     reduceMotion: false,
     strokeCounter: true,
+    minimap: true,
 
     nameTags: true,
     othersAimLines: true,

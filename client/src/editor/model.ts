@@ -1,9 +1,4 @@
-import type { CourseObject, HoleData, ObjectType, ShapeData, ShapeType, Vec, WallObject, CurveWallObject } from '@holey/shared'
-import { buildShape, objectBounds, boundsCenter, wallPath } from '../game/data'
-import { closestOnSegment } from '../game/utilities/closestOnSegment'
-import { ArcWall } from '../game/classes/ArcWall'
-import { Bridge } from '../game/classes/Bridge'
-import { normalizeAngle } from '../game/utilities/angles'
+import { type CourseObject, type HoleData, type ObjectType, type ShapeData, type ShapeType, type Vec, type WallObject, type CurveWallObject, buildShape, objectBounds, boundsCenter, wallPath, closestOnSegment, ArcWall, Bridge, normalizeAngle } from '@holey/shared'
 
 export type ToolId = 'select' | 'fairway' | 'sand' | 'ice' | 'water' | 'slope' | 'wall' | 'curveWall'
     | 'arcWall' | 'bumper' | 'post' | 'bridge' | 'decor' | 'tee' | 'cup'
@@ -404,7 +399,7 @@ export function hitObject(o: CourseObject, p: Vec, slop: number): boolean {
         case 'post':
             return Math.hypot(p.x - o.x, p.y - o.y) <= o.radius + slop
         case 'bridge':
-            return new Bridge(o.a.x, o.a.y, o.b.x, o.b.y, o.width, false, '', '').shape.contains(p.x, p.y)
+            return new Bridge(o.a.x, o.a.y, o.b.x, o.b.y, o.width, false).shape.contains(p.x, p.y)
         case 'decor': {
             const c = boundsCenter(objectBounds(o))
             const cos = Math.cos(-o.rotation)

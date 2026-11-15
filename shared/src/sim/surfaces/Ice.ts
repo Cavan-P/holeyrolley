@@ -1,8 +1,8 @@
 import { Surface } from './Surface'
 import type { Shape } from '../shapes/Shape'
 
-export class Sand extends Surface {
+export class Ice extends Surface {
     constructor(shape: Shape){
-        super(shape, '#e8d28a', 3, 2.5)
+        super(shape, 0.15, 0.1)
     }
 }

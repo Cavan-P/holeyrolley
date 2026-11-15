@@ -91,7 +91,9 @@ export function parseClientMsg(value: unknown): ClientMsg | null {
                 power: value.power
             }
         }
-
+        case 'start': {
+            return { type: 'start' }
+        }
 
         default:
             return null

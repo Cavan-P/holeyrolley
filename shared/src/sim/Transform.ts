@@ -1,4 +1,4 @@
-import type { Point } from '../shapes/Shape'
+import type { Point } from './shapes/Shape'
 
 export class Transform {
     x: number
@@ -55,12 +55,6 @@ export class Transform {
         const [lx, ly] = this.toLocal(wx, wy)
         const [ox, oy] = place(lx, ly, this.prevX, this.prevY, this.prevAngle, this.px, this.py)
         return [(wx - ox) / this.dt, (wy - oy) / this.dt]
-    }
-
-    apply(ctx: CanvasRenderingContext2D): void {
-        ctx.translate(this.x + this.px, this.y + this.py)
-        ctx.rotate(this.angle)
-        ctx.translate(-this.px, -this.py)
     }
 }
 

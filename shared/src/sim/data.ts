@@ -1,4 +1,4 @@
-import type { CourseObject, ShapeData, Vec } from '@holey/shared'
+import type { CourseObject, ShapeData, Vec } from '../course'
 import type { Bounds, Point, Shape } from './shapes/Shape'
 import { RectShape } from './shapes/RectShape'
 import { CircleShape } from './shapes/CircleShape'
@@ -6,7 +6,7 @@ import { DonutShape } from './shapes/DonutShape'
 import { ArcShape } from './shapes/ArcShape'
 import { PolygonShape } from './shapes/PolygonShape'
 import { CurveShape } from './shapes/CurveShape'
-import { smoothPoints, signedArea } from './utilities/spline'
+import { smoothPoints, signedArea } from './spline'
 
 export const toPoints = (vs: Vec[]): Point[] => vs.map(v => [v.x, v.y])
 

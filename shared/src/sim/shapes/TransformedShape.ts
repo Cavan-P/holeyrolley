@@ -1,5 +1,5 @@
 import { Shape, type Bounds, type Point } from './Shape'
-import type { Transform } from '../classes/Transform'
+import type { Transform } from '../Transform'
 
 export class TransformedShape extends Shape {
     inner: Shape
@@ -14,13 +14,6 @@ export class TransformedShape extends Shape {
     contains(x: number, y: number): boolean {
         const [lx, ly] = this.transform.toLocal(x, y)
         return this.inner.contains(lx, ly)
-    }
-
-    trace(ctx: CanvasRenderingContext2D): void {
-        ctx.save()
-        this.transform.apply(ctx)
-        this.inner.trace(ctx)
-        ctx.restore()
     }
 
     bounds(): Bounds {
