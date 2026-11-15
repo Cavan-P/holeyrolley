@@ -1,11 +1,14 @@
 import { WebSocketServer } from 'ws'
+import { http } from './http'
 
 import { makeMember, send, sendRoom, sendState } from './utilities'
 import { type Member, type Room } from './types'
 import { parseClientMsg } from './validate'
-import { COURSES, DEFAULT_COURSE, practiceGreenWith, canPlace, buildHole, maxPlayers, Ball, type HoleData } from '@holey/shared'
+import { COURSES, DEFAULT_COURSE, holeRange, practiceGreenWith, canPlace, buildHole, maxPlayers, Ball, type HoleData } from '@holey/shared'
 
-const wss = new WebSocketServer({ port: 3001 })
+const PORT = Number(process.env.PORT) || 3001
+const wss = new WebSocketServer({ server: http, path: '/ws' })
+http.listen(PORT)
 
 const rooms = new Map<string, Room>()
 
@@ -48,6 +51,7 @@ function rebuildGreen(room: Room): void {
 }
 
 const RESPAWN_DELAY = 1.2
+const REJOIN_GRACE = 60_000
 
 function respawnHoled(room: Room): void {
     const hole = room.hole
@@ -66,6 +70,8 @@ function respawnHoled(room: Room): void {
 }
 
 function setHole(room: Room, data: HoleData): void {
+    room.pickedUp = new Set()
+    room.holeDone = false
     room.hole = buildHole(data, null).hole
     room.hole.collideBalls = room.settings.collision
     room.holeData = data
@@ -76,6 +82,114 @@ function setHole(room: Room, data: HoleData): void {
     }
 }
 
+function courseOf(room: Room) {
+    return COURSES[room.settings.course]
+}
+
+function startScores(room: Room, id: string): void {
+    const holes = courseOf(room)?.holes.length ?? 0
+    room.scores.set(id, Array.from({ length: holes }, () => null))
+}
+
+function pickUp(room: Room, id: string, ball: Ball): void {
+    room.pickedUp.add(id)
+    if(room.hole) room.hole.balls = room.hole.balls.filter(b => b !== ball)
+}
+
+function checkHole(room: Room): void {
+    const hole = room.hole
+    if(room.phase !== 'playing' || room.holeDone || !hole) return
+
+    const strokeCap = room.settings.strokeLimit === null ? null : hole.par + room.settings.strokeLimit
+    const outOfTime = room.settings.timeLimit !== null && hole.time >= room.settings.timeLimit
+
+    for(const [id, ball] of room.balls){
+        if(room.pickedUp.has(id) || ball.holed()) continue
+
+        const capped = strokeCap !== null && ball.strokes >= strokeCap && !ball.isMoving() && !ball.sinking()
+        if(capped || outOfTime) pickUp(room, id, ball)
+    }
+
+    const settled = (id: string, ball: Ball) => ball.finished() || room.pickedUp.has(id)
+    if(![...room.balls].every(([id, ball]) => settled(id, ball))) return
+
+    for(const [id, ball] of room.balls){
+        const card = room.scores.get(id)
+        if(!card) continue
+
+        const score = room.pickedUp.has(id) ? Math.max(ball.strokes, hole.par) + 1 : ball.strokes
+        card[room.holeIndex] = strokeCap === null ? score : Math.min(score, strokeCap + 1)
+    }
+
+    room.holeDone = true
+    sendRoom(room)
+}
+
+function backToLobby(room: Room): void {
+    room.phase = 'lobby'
+    room.holeIndex = 0
+    room.scores = new Map()
+    setHole(room, practiceGreenWith([...room.pieces.values()]))
+}
+
+function makeRoom(member: Member, isPublic: boolean): Room {
+    const room: Room = {
+        code: makeCode(),
+        public: isPublic,
+        settings: {
+            collision: false,
+            course: DEFAULT_COURSE,
+            strokeLimit: null,
+            timeLimit: null,
+            holes: 'all'
+        },
+        hostId: member.player.id,
+        players: new Map([[member.player.id, member]]),
+        phase: 'lobby',
+        hole: null,
+        holeData: null,
+        holeIndex: 0,
+        balls: new Map(),
+        pieces: new Map(),
+        scores: new Map(),
+        pickedUp: new Set(),
+        holeDone: false
+    }
+
+    setHole(room, practiceGreenWith([]))
+    rooms.set(room.code, room)
+    return room
+}
+
+function removeMember(room: Room, myId: string): void {
+    const member = room.players.get(myId)
+    if(!member) return
+    if(member.gone) clearTimeout(member.gone)
+
+    const myBall = room.balls.get(myId)
+
+    room.players.delete(myId)
+    room.balls.delete(myId)
+    room.scores.delete(myId)
+    room.pickedUp.delete(myId)
+    if(room.hole) {
+        room.hole.balls = room.hole.balls.filter(b => b !== myBall)
+    }
+    if(room.pieces.delete(myId)) rebuildGreen(room)
+
+    if(!room.players.size){
+        rooms.delete(room.code)
+        return
+    }
+
+    if(room.hostId === myId){
+        const nextHost = room.players.keys().next().value
+        if(nextHost) room.hostId = nextHost
+    }
+
+    sendRoom(room)
+}
+
 wss.on('connection', socket => {
     //once for every connection
 
@@ -84,30 +198,24 @@ wss.on('connection', socket => {
     function leaveRoom(): void {
         if(!mine) return
 
-        const room = mine.room
-        const myId = mine.member.player.id
-        const myBall = room.balls.get(myId)
+        const { room, member } = mine
+        mine = null
+        removeMember(room, member.player.id)
+    }
 
+    function disconnect(): void {
+        if(!mine || mine.member.socket !== socket) return
+
+        const { room, member } = mine
         mine = null
 
-        room.players.delete(myId)
-        room.balls.delete(myId)
-        if(room.hole) {
-            room.hole.balls = room.hole.balls.filter(b => b !== myBall)
-        }
-        if(room.pieces.delete(myId)) rebuildGreen(room)
-
-        if(!room.players.size){
-            rooms.delete(room.code)
+        if(room.phase !== 'playing'){
+            removeMember(room, member.player.id)
             return
         }
 
-        if(room.hostId === myId){
-            const nextHost = room.players.keys().next().value
-            if(nextHost) room.hostId = nextHost
-        }
-
-        sendRoom(room)
+        member.socket = null
+        member.gone = setTimeout(() => removeMember(room, member.player.id), REJOIN_GRACE)
     }
 
     socket.on('message', data => {
@@ -131,33 +239,32 @@ wss.on('connection', socket => {
 
                 const member = makeMember(msg.name, msg.cosmetics, socket)
 
-                const room: Room = {
-                    code: makeCode(),
-                    settings: {
-                        collision: false,
-                        course: DEFAULT_COURSE,
-                        strokeLimit: null,
-                        timeLimit: null
-                    },
-                    hostId: member.player.id,
-                    players: new Map([[member.player.id, member]]),
-                    phase: 'lobby',
-                    hole: null,
-                    holeData: null,
-                    holeIndex: 0,
-                    balls: new Map(),
-                    pieces: new Map()
-                }
-
-                setHole(room, practiceGreenWith([]))
-
-                rooms.set(room.code, room)
+                const room = makeRoom(member, false)
 
                 mine = { room, member }
 
                 sendRoom(room)
             break }
 
+
+            case 'quickplay': {
+                if(mine) break
+
+                const member = makeMember(msg.name, msg.cosmetics, socket)
+                const open = [...rooms.values()].find(r => r.public && r.phase === 'lobby' && r.players.size < maxPlayers)
+
+                if(open){
+                    open.players.set(member.player.id, member)
+                    addBall(open, member)
+                    mine = { room: open, member }
+                    sendRoom(open)
+                    break
+                }
+
+                const room = makeRoom(member, true)
+                mine = { room, member }
+                sendRoom(room)
+            break }
 
             //JOIN ROOM
             case 'join': {
@@ -175,6 +282,16 @@ wss.on('connection', socket => {
                     break
                 }
 
+                const returning = msg.token ? [...room.players.values()].find(m => m.token === msg.token) : undefined
+                if(returning){
+                    if(returning.gone) clearTimeout(returning.gone)
+                    returning.gone = null
+                    returning.socket = socket
+                    mine = { room, member: returning }
+                    sendRoom(room)
+                    break
+                }
+
                 if(room.players.size >= maxPlayers){
                     send(socket, {
                         type: 'error',
@@ -189,6 +306,7 @@ wss.on('connection', socket => {
 
                 room.players.set(member.player.id, member)
                 addBall(room, member)
+                if(room.phase === 'playing') startScores(room, member.player.id)
                 mine = { room, member }
                 sendRoom(room)
             break }
@@ -217,13 +335,19 @@ wss.on('connection', socket => {
                 if(mine.room.phase !== 'lobby') break
 
 
-                const holeData = COURSES[mine.room.settings.course]?.holes[mine.room.holeIndex]
+                const room = mine.room
+                const course = courseOf(room)
+                if(!course) break
+
+                const [first] = holeRange(course.holes.length, room.settings.holes)
+                const holeData = course.holes[first]
                 if(!holeData) break
 
-                const room = mine.room
-
+                room.holeIndex = first
                 setHole(room, holeData)
                 room.phase = 'playing'
+                room.scores = new Map()
+                for(const id of room.players.keys()) startScores(room, id)
 
                 sendRoom(room)
 
@@ -234,6 +358,7 @@ wss.on('connection', socket => {
                 if(!mine) break
 
                 if(!mine.room.hole) break
+                if(mine.room.holeDone || mine.room.pickedUp.has(mine.member.player.id)) break
 
                 const ball = mine.room.balls.get(mine.member.player.id)
                 if(!ball) break
@@ -261,6 +386,39 @@ wss.on('connection', socket => {
 
             break }
 
+            case 'next': {
+                if(!mine) break
+
+                const room = mine.room
+                if(mine.member.player.id !== room.hostId) break
+                if(room.phase !== 'playing' || !room.holeDone) break
+
+                const course = courseOf(room)
+                const [, last] = holeRange(course?.holes.length ?? 0, room.settings.holes)
+                const nextData = room.holeIndex < last ? course?.holes[room.holeIndex + 1] : undefined
+                if(nextData){
+                    room.holeIndex++
+                    setHole(room, nextData)
+                }
+                else backToLobby(room)
+
+                sendRoom(room)
+
+            break }
+
+            case 'endHole': {
+                if(!mine) break
+
+                const room = mine.room
+                if(mine.member.player.id !== room.hostId) break
+                if(room.phase !== 'playing' || room.holeDone) break
+
+                for(const [id, ball] of room.balls){
+                    if(!ball.holed() && !room.pickedUp.has(id)) pickUp(room, id, ball)
+                }
+
+            break }
+
             //Leave room, disconnect, whatever
             case 'leave': { 
                 leaveRoom()
@@ -271,7 +429,7 @@ wss.on('connection', socket => {
         }
     })
 
-    socket.on('close', leaveRoom)
+    socket.on('close', disconnect)
     
 })
 
@@ -293,7 +451,10 @@ setInterval(() => {
         acc -= STEP
     }
 
-    for(const room of rooms.values()) respawnHoled(room)
+    for(const room of rooms.values()){
+        respawnHoled(room)
+        checkHole(room)
+    }
 }, 1000 / 60)
 
 setInterval(() => {
@@ -302,4 +463,4 @@ setInterval(() => {
     }
 }, 1000 / 20)
 
-console.log('server on :3001')
+console.log(`server on :${PORT}`)

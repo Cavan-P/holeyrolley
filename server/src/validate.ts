@@ -1,4 +1,4 @@
-import { BALL_COLORS, CELEBRATIONS, COURSES, HATS, STROKE_LIMITS, TIME_LIMITS, maxNameLength, type ClientMsg, type Cosmetics } from '@holey/shared'
+import { BALL_COLORS, CELEBRATIONS, COURSES, HATS, HOLE_RANGES, STROKE_LIMITS, TIME_LIMITS, maxNameLength, type ClientMsg, type Cosmetics, type HoleRange } from '@holey/shared'
 
 export function isObject(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null
@@ -48,6 +48,13 @@ export function parseClientMsg(value: unknown): ClientMsg | null {
                 cosmetics
             }
         }
+        case 'quickplay': {
+            const name = parseName(value.name)
+            const cosmetics = parseCosmetics(value.cosmetics)
+            if(name === null || cosmetics === null) return null
+
+            return { type: 'quickplay', name, cosmetics }
+        }
 
         case 'join': {
             const name = parseName(value.name)
@@ -57,12 +64,14 @@ export function parseClientMsg(value: unknown): ClientMsg | null {
             if(cosmetics === null) return null
 
             if(typeof value.room !== 'string') return null
+            if(value.token !== undefined && typeof value.token !== 'string') return null
 
             return {
                 type: 'join',
                 room: value.room,
                 name,
-                cosmetics
+                cosmetics,
+                ...(value.token === undefined ? {} : { token: value.token })
             }
         }
 
@@ -73,6 +82,8 @@ export function parseClientMsg(value: unknown): ClientMsg | null {
             const { strokeLimit, timeLimit } = value.settings
             if(!STROKE_LIMITS.some(l => l === strokeLimit)) return null
             if(!TIME_LIMITS.some(l => l === timeLimit)) return null
+            const holes = value.settings.holes
+            if(!HOLE_RANGES.some(r => r === holes)) return null
 
             return {
                 type: 'update',
@@ -80,7 +91,8 @@ export function parseClientMsg(value: unknown): ClientMsg | null {
                     collision: value.settings.collision,
                     course: value.settings.course,
                     strokeLimit: strokeLimit as number | null,
-                    timeLimit: timeLimit as number | null
+                    timeLimit: timeLimit as number | null,
+                    holes: holes as HoleRange
                 }
             }
         }
@@ -106,6 +118,12 @@ export function parseClientMsg(value: unknown): ClientMsg | null {
         }
         case 'start': {
             return { type: 'start' }
+        }
+        case 'next': {
+            return { type: 'next' }
+        }
+        case 'endHole': {
+            return { type: 'endHole' }
         }
 
         default:

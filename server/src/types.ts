@@ -3,11 +3,14 @@ import { type WebSocket } from 'ws'
 
 export type Member = {
     player: Player
-    socket: WebSocket
+    socket: WebSocket | null
+    token: string
+    gone: ReturnType<typeof setTimeout> | null
 }
 
 export type Room = {
     code: string
+    public: boolean
     settings: RoomSettings
     hostId: string
     players: Map<string, Member>,
@@ -17,4 +20,7 @@ export type Room = {
     holeIndex: number
     balls: Map<string, Ball>
     pieces: Map<string, GreenPiece>
+    scores: Map<string, (number | null)[]>
+    pickedUp: Set<string>
+    holeDone: boolean
 }

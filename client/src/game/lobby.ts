@@ -175,7 +175,7 @@ export function startLobby(canvas: HTMLCanvasElement, onPlaced: () => void): { d
     }
 }
 
-function bracket(states: TimedState[], at: number, fallback: TimedState): [TimedState, TimedState, number] {
+export function bracket(states: TimedState[], at: number, fallback: TimedState): [TimedState, TimedState, number] {
     for(let i = states.length - 1; i > 0; i--){
         const a = states[i - 1]
         const b = states[i]
@@ -188,7 +188,7 @@ function bracket(states: TimedState[], at: number, fallback: TimedState): [Timed
     return [first, first, 0]
 }
 
-function drawNameTag(ctx: CanvasRenderingContext2D, x: number, y: number, name: string, zoom: number): void {
+export function drawNameTag(ctx: CanvasRenderingContext2D, x: number, y: number, name: string, zoom: number): void {
     ctx.save()
     ctx.font = `700 ${14 / zoom}px Nunito, sans-serif`
     ctx.textAlign = 'center'

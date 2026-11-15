@@ -1,7 +1,7 @@
 import { getPrefs, subscribe } from '../settings/store'
 import { TRACKS, type TrackId } from './tracks'
 
-const audio = new AudioContext()
+export const audio = new AudioContext()
 const volume = audio.createGain()
 volume.gain.value = 0
 volume.connect(audio.destination)

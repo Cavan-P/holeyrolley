@@ -10,7 +10,9 @@
   ],
   "scripts": {
     "dev": "concurrently -n server,client,tsc:client,tsc:server -c blue,green,magenta,yellow \"npm run dev -w server\" \"npm run dev -w client\" \"npm run typecheck:watch -w client\" \"npm run typecheck:watch -w server\"",
-    "typecheck": "npm run typecheck --workspaces"
+    "typecheck": "npm run typecheck --workspaces",
+    "build": "npm run build -w client",
+    "start": "npm run start -w server"
   },
   "devDependencies": {
     "concurrently": "^10.0.6"

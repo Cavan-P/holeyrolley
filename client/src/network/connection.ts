@@ -6,6 +6,7 @@ type StateMsg = Extract<ServerMsg, { type: 'state' }>
 export type TimedState = { msg: StateMsg, at: number }
 
 const STATE_BUFFER = 10
+const REJOIN_KEY = 'holey-rejoin'
 
 export type ErrorReason =Extract<ServerMsg, { type: 'error' }>['reason']
 
@@ -35,6 +36,10 @@ export function getLatestState(): StateMsg | null {
 
 export function getStates(): TimedState[] {
     return states
+}
+
+export function clearStates(): void {
+    states = []
 }
 
 export function subscribe(listener: () => void): () => void {
@@ -75,6 +80,7 @@ export function connect(): void {
 
         switch(msg.type){
             case 'room': { 
+                try { sessionStorage.setItem(REJOIN_KEY, JSON.stringify({ code: msg.code, token: msg.yourToken })) } catch {}
                 update({ room: msg, error: null })
             break }
             case 'error': { 
@@ -94,7 +100,16 @@ export function send(msg: ClientMsg): void {
     socket.send(JSON.stringify(msg))
 }
 
+export function rejoinToken(code: string): string | undefined {
+    try {
+        const saved = JSON.parse(sessionStorage.getItem(REJOIN_KEY) ?? 'null') as { code: string, token: string } | null
+        return saved && saved.code === code.toUpperCase() ? saved.token : undefined
+    }
+    catch { return undefined }
+}
+
 export function leave(): void {
+    try { sessionStorage.removeItem(REJOIN_KEY) } catch {}
     send({ type: 'leave' })
     states = []
     update({ room: null })

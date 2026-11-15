@@ -7,6 +7,7 @@ import { Button } from '../components/Button'
 import { getBests, isUnlocked, recordScore, UNLOCK_OVER_PAR } from '../progress/store'
 import { usePrefs } from '../settings/useSetting'
 import { getCosmetics } from '../locker/store'
+import { Tips } from '../components/Tips'
 
 function holeTitle(result: HoleResult): string {
     if(result.strokes === 1) return 'Hole in One!'
@@ -173,6 +174,7 @@ export function Game(){
     return (
         <>
             <canvas ref={canvasRef} className='touch-none fixed inset-0 w-full h-full block' />
+            {!result && <Tips hole={course.holes[holeIndex]} />}
 
             <button
                 type='button'

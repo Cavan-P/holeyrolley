@@ -1,12 +1,12 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { COURSES, STROKE_LIMITS, TIME_LIMITS, maxPlayers, type ObstacleKind, type Player } from '@holey/shared'
+import { COURSES, HOLE_RANGES, STROKE_LIMITS, TIME_LIMITS, holeRange, maxPlayers, type ObstacleKind, type Player } from '@holey/shared'
 import { Arrow, Button } from '../components/Button'
 import { BallPreview } from '../components/BallPreview'
 import { HolePreview } from '../components/HolePreview'
 import { Toggle } from '../components/SettingsControls'
-import { connect, leave, send } from '../network/connection'
+import { connect, leave, rejoinToken, send } from '../network/connection'
 import { useConnection } from '../network/useConnection'
 import { ERROR_TEXT } from '../network/errorText'
 import { getCosmetics } from '../locker/store'
@@ -34,7 +34,7 @@ const OBSTACLE_NAMES: Record<ObstacleKind, string> = {
     wall: 'Wall'
 }
 
-function Choices<T extends number | null>({ label, description, options, value, labelOf, onPick }: { label: string, description: string, options: readonly T[], value: T, labelOf: (v: T) => string, onPick: ((v: T) => void) | null }){
+function Choices<T extends string | number | null>({ label, description, options, value, labelOf, onPick }: { label: string, description: string, options: readonly T[], value: T, labelOf: (v: T) => string, onPick: ((v: T) => void) | null }){
     return (
         <div className='flex flex-col gap-2.5 pt-3 border-t-2 border-line'>
             <div className='flex flex-col'>
@@ -99,12 +99,16 @@ export function TeeBox(){
             return
         }
 
-        send({ type: 'join', room: code, name, cosmetics: getCosmetics() })
+        send({ type: 'join', room: code, name, cosmetics: getCosmetics(), token: rejoinToken(code) })
     }, [room, connection.status, code, navigate])
 
     useEffect(() => {
         if(room && room.code !== code.toUpperCase()) navigate(`/room/${room.code}`, { replace: true })
     }, [room, code, navigate])
+
+    useEffect(() => {
+        if(room?.roomPhase === 'playing') navigate(`/room/${room.code}/play`)
+    }, [room, navigate])
 
     const inRoom = room !== null
 
@@ -168,12 +172,12 @@ export function TeeBox(){
                         <button
                             type='button'
                             onClick={copyLink}
-                            className='h-12 px-5 rounded-full bg-white/10 hover:bg-white/16 font-extrabold'
+                            className='h-12 px-5 rounded-full bg-white/10 hover:bg-white/24 hover:ring-2 hover:ring-white/40 cursor-pointer transition font-extrabold'
                         >
                             {copied ? 'Link copied!' : 'Copy invite link'}
                         </button>
                     </div>
-                    <button type='button' onClick={leaveParty} className='h-12 px-5 rounded-full bg-white/8 hover:bg-white/14 font-extrabold'>
+                    <button type='button' onClick={leaveParty} className='h-12 px-5 rounded-full bg-white/8 hover:bg-white/24 hover:ring-2 hover:ring-white/40 cursor-pointer transition font-extrabold'>
                         Leave party
                     </button>
                 </header>
@@ -233,6 +237,14 @@ export function TeeBox(){
                                 )}
                             </div>
                             <Choices
+                                label='Holes'
+                                description='Play the whole course or half of it.'
+                                options={HOLE_RANGES}
+                                value={settings.holes}
+                                labelOf={v => v === 'all' ? `All ${course?.holes.length ?? ''}` : v === 'front' ? 'Front 9' : 'Back 9'}
+                                onPick={isHost ? v => update({ holes: v }) : null}
+                            />
+                            <Choices
                                 label='Stroke limit'
                                 description='Pick up your ball after this many.'
                                 options={STROKE_LIMITS}
@@ -258,7 +270,7 @@ export function TeeBox(){
                             >
                                 <span className='flex flex-col'>
                                     <span className='font-black text-2xl'>Start game</span>
-                                    {course && <span className='font-bold opacity-80'>{course.name} · all {course.holes.length} holes</span>}
+                                    {course && <span className='font-bold opacity-80'>{course.name} · {settings.holes === 'all' ? `all ${course.holes.length} holes` : settings.holes === 'front' ? `holes 1–${holeRange(course.holes.length, 'front')[1] + 1}` : `holes ${holeRange(course.holes.length, 'back')[0] + 1}–${course.holes.length}`}</span>}
                                 </span>
                                 <Arrow />
                             </button>

@@ -1,6 +1,6 @@
-import type { CourseData } from '@holey/shared'
+import { COURSES, type CourseData } from '@holey/shared'
 
-type Progress = Record<string, (number | null)[]>
+type Progress = Record<string, Record<string, number> | (number | null)[]>
 
 const KEY = 'holeyrolley:progress'
 export const UNLOCK_OVER_PAR = 2
@@ -15,19 +15,35 @@ function load(): Progress {
     }
 }
 
+function byName(courseId: string, saved: Progress[string] | undefined): Record<string, number> {
+    if(!saved) return {}
+    if(!Array.isArray(saved)) return saved
+
+    const out: Record<string, number> = {}
+    const holes = COURSES[courseId]?.holes ?? []
+    saved.forEach((s, i) => {
+        const name = holes[i]?.name
+        if(s != null && name) out[name] = s
+    })
+    return out
+}
+
 export function getBests(courseId: string): (number | null)[] {
-    return load()[courseId] ?? []
+    const saved = byName(courseId, load()[courseId])
+    return (COURSES[courseId]?.holes ?? []).map(h => saved[h.name] ?? null)
 }
 
 export function recordScore(courseId: string, holeIndex: number, strokes: number): void {
+    const name = COURSES[courseId]?.holes[holeIndex]?.name
+    if(!name) return
+
     const all = load()
-    const bests = all[courseId] ?? []
-    const prev = bests[holeIndex]
+    const bests = byName(courseId, all[courseId])
+    const prev = bests[name]
 
     if(prev != null && prev <= strokes) return
 
-    for(let i = bests.length; i < holeIndex; i++) bests[i] = null
-    bests[holeIndex] = strokes
+    bests[name] = strokes
     all[courseId] = bests
 
     try {

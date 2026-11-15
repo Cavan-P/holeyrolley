@@ -5,17 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
     "typecheck": "tsc -p .",
     "typecheck:watch": "tsc -p . --watch --preserveWatchOutput"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
     "@types/ws": "^8.18.2",
-    "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   },
   "dependencies": {
-    "@holey/shared": "^1.0.0",
+    "@holey/shared": "*",
+    "tsx": "^4.23.15",
     "ws": "^8.22.0"
   }
 }

@@ -9,6 +9,7 @@ import { Settings } from './pages/Settings'
 import { Locker } from './pages/Locker'
 import { TeeBox } from './pages/TeeBox'
 import { Courses } from './pages/Courses'
+import { PartyGame } from './pages/PartyGame'
 
 const Editor = import.meta.env.DEV ? lazy(() => import('./pages/Editor').then(m => ({ default: m.Editor }))) : null
 
@@ -25,6 +26,7 @@ export function App(){
             <Route path='/settings' element={ <Settings /> } />
             <Route path='/locker' element={ <Locker /> } />
             <Route path='/room/:code' element={ <TeeBox /> } />
+            <Route path='/room/:code/play' element={ <PartyGame /> } />
             {Editor && <Route path='/editor' element={ <Suspense><Editor /></Suspense> } />}
             <Route path='*' element={<div>this page does not exist</div>} />
         </Routes>

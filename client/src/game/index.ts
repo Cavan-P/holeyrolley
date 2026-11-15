@@ -11,6 +11,7 @@ import { getTheme } from './art/themes'
 import { setupInput } from './input'
 import { buildHole } from './build'
 import { getPrefs } from '../settings/store'
+import { ballSounds } from '../audio/sfx'
 
 type GameEvents = {
     onStroke: (strokes: number) => void
@@ -39,6 +40,7 @@ export function startGame(canvas: HTMLCanvasElement, course: CourseData, events:
     let ball: Ball
 
     let overview = false
+    let sounds = ballSounds()
 
     let lastStrokes = 0
     let reportedComplete = false
@@ -58,6 +60,7 @@ export function startGame(canvas: HTMLCanvasElement, course: CourseData, events:
         if(!first) throw new Error('Hole has no balls')
 
         ball = first
+        sounds = ballSounds()
     
         
         camera.snapTo(ball.x, ball.y)
@@ -106,6 +109,8 @@ export function startGame(canvas: HTMLCanvasElement, course: CourseData, events:
 
             acc -= STEP
         }
+
+        sounds(ball)
 
         if(ball.strokes !== lastStrokes){
             lastStrokes = ball.strokes
